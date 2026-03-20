@@ -1,12 +1,31 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import MaintenanceCard from '../components/MaintenanceCard';
+import maintenanceService from '../services/maintenanceService';
 
 export default function MaintenanceScreen() {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    const fetchMaintenance = async () => {
+      try {
+        const response = await maintenanceService.getMaintenance();
+        setItems(response.data);
+      } catch (error) {
+        console.error('Error fetching maintenance data', error);
+      }
+    };
+    fetchMaintenance();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Maintenance Schedule</Text>
-      <MaintenanceCard item={{ deviceName: 'AC Filter', dueDate: '2023-11-01', status: 'pending' }} />
+      <FlatList
+        data={items}
+        keyExtractor={item => item._id || item.id}
+        renderItem={({ item }) => <MaintenanceCard item={item} />}
+      />
     </View>
   );
 }

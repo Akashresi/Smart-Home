@@ -2,18 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import InventoryItem from '../components/InventoryItem';
 import ExpenseSummary from '../components/ExpenseSummary';
+import inventoryService from '../services/inventoryService';
+import expenseService from '../services/expenseService';
 
 export default function InventoryExpense() {
   const [inventory, setInventory] = useState([]);
   const [expenses, setExpenses] = useState([]);
 
   useEffect(() => {
-    setInventory([
-      { id: '1', itemName: 'Milk', quantity: 2, threshold: 1 }
-    ]);
-    setExpenses([
-      { id: '1', category: 'Groceries', amount: 15 }
-    ]);
+    const fetchData = async () => {
+      try {
+        const [invRes, expRes] = await Promise.all([
+          inventoryService.getInventory(),
+          expenseService.getExpenses()
+        ]);
+        setInventory(invRes.data);
+        setExpenses(expRes.data);
+      } catch (error) {
+        console.error("Error fetching inventory/expenses:", error);
+      }
+    };
+    fetchData();
   }, []);
 
   return (
@@ -21,7 +30,7 @@ export default function InventoryExpense() {
       <Text style={styles.header}>Inventory</Text>
       <FlatList
         data={inventory}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id || item.id}
         renderItem={({ item }) => <InventoryItem item={item} />}
       />
       

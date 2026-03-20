@@ -16,3 +16,12 @@ def suggest(data: UsageData):
 def predict_inventory(data: UsageData):
     predictions = predict_low_inventory(data.items)
     return {"low_inventory_predictions": predictions}
+
+class ExpenseData(BaseModel):
+    expenses: list
+
+@router.post("/expense-insights")
+def analyze_expenses(data: ExpenseData):
+    from services.recommendation import provide_expense_insights
+    insights = provide_expense_insights(data.expenses)
+    return {"insights": insights}

@@ -31,7 +31,7 @@ exports.updateInventoryItem = async (req, res) => {
       await Expense.create({
         amount: usedAmount * 10,
         category: 'Inventory Usage',
-        linkedInventoryItem: item._id
+        inventoryItemId: item._id
       });
     }
 

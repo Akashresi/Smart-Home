@@ -2,7 +2,7 @@ const Expense = require('../models/Expense');
 
 exports.getExpenses = async (req, res) => {
   try {
-    const expenses = await Expense.find().populate('linkedInventoryItem', 'itemName');
+    const expenses = await Expense.find().populate('inventoryItemId', 'itemName');
     res.json(expenses);
   } catch (err) {
     res.status(500).json({ message: err.message });
