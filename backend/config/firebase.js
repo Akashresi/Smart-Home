@@ -1,10 +1,12 @@
 const admin = require('firebase-admin');
+const fs = require('fs');
 
-// Ensure you download your service account key and reference it here
-// const serviceAccount = require('./path/to/serviceAccountKey.json');
-
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount)
-// });
+if (fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) {
+  const serviceAccount = require('.' + process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+} else {
+  console.warn("Firebase service account file not found. Auth will fail.");
+  admin.initializeApp();
+}
 
 module.exports = admin;

@@ -1,56 +1,58 @@
 const Inventory = require('../models/Inventory');
 const Expense = require('../models/Expense');
+const Alert = require('../models/Alert');
 
-exports.getInventory = async (req, res) => {
+const getInventory = async (req, res) => {
   try {
-    const items = await Inventory.find();
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const inv = await Inventory.find({ userId: req.user.uid });
+    res.json(inv);
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.addInventoryItem = async (req, res) => {
+const createInventoryItem = async (req, res) => {
   try {
-    const item = await Inventory.create(req.body);
+    const item = await Inventory.create({ ...req.body, userId: req.user.uid });
     res.status(201).json(item);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.updateInventoryItem = async (req, res) => {
+const updateInventoryItem = async (req, res) => {
   try {
-    // Check if quantity decreased to auto-generate expense
-    const oldItem = await Inventory.findById(req.params.id);
-    const item = await Inventory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const oldItem = await Inventory.findOne({ _id: req.params.id, userId: req.user.uid });
+    if (!oldItem) return res.status(404).json({ message: 'Not found' });
     
-    if (oldItem.quantity > item.quantity) {
-      const usedAmount = oldItem.quantity - item.quantity;
-      // create automatic expense entry (mock cost per item as $10 for example)
-      await Expense.create({
-        amount: usedAmount * 10,
-        category: 'Inventory Usage',
-        inventoryItemId: item._id
+    const usedAmount = oldItem.quantity - (req.body.quantity || oldItem.quantity);
+    const item = await Inventory.findOneAndUpdate({ _id: req.params.id, userId: req.user.uid }, req.body, { new: true });
+    
+    if (usedAmount > 0) {
+      const cost = usedAmount * (oldItem.unitCost || 0);
+      if (cost > 0) {
+        await Expense.create({
+          amount: cost,
+          category: 'Supplies',
+          linkedInventoryItem: item._id,
+          userId: req.user.uid
+        });
+      }
+    }
+    
+    if (item.isLowStock()) {
+      await Alert.create({
+        type: 'low_stock',
+        message: `${item.itemName} is low (qty: ${item.quantity})`,
+        userId: req.user.uid
       });
     }
-
-    if (item.isLowStock()) {
-      // Trigger low stock alert here
-      console.log(`Alert: ${item.itemName} is running low!`);
-    }
-
     res.json(item);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.deleteInventoryItem = async (req, res) => {
+const deleteInventoryItem = async (req, res) => {
   try {
-    await Inventory.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Item deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const result = await Inventory.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
+    if (!result) return res.status(404).json({ message: 'Not found' });
+    res.json({ message: 'Deleted' });
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
+
+module.exports = { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem };

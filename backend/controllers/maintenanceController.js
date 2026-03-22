@@ -1,37 +1,33 @@
 const Maintenance = require('../models/Maintenance');
 
-exports.getMaintenance = async (req, res) => {
+const getMaintenanceTasks = async (req, res) => {
   try {
-    const items = await Maintenance.find();
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const tasks = await Maintenance.find({ userId: req.user.uid });
+    res.json(tasks);
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.addMaintenanceItem = async (req, res) => {
+const createMaintenanceTask = async (req, res) => {
   try {
-    const item = await Maintenance.create(req.body);
-    res.status(201).json(item);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+    const task = await Maintenance.create({ ...req.body, userId: req.user.uid });
+    res.status(201).json(task);
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.updateMaintenanceItem = async (req, res) => {
+const updateMaintenanceTask = async (req, res) => {
   try {
-    const item = await Maintenance.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(item);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+    const task = await Maintenance.findOneAndUpdate({ _id: req.params.id, userId: req.user.uid }, req.body, { new: true });
+    if (!task) return res.status(404).json({ message: 'Not found' });
+    res.json(task);
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-exports.deleteMaintenanceItem = async (req, res) => {
+const deleteMaintenanceTask = async (req, res) => {
   try {
-    await Maintenance.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Maintenance record deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const result = await Maintenance.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
+    if (!result) return res.status(404).json({ message: 'Not found' });
+    res.json({ message: 'Deleted' });
+  } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
+
+module.exports = { getMaintenanceTasks, createMaintenanceTask, updateMaintenanceTask, deleteMaintenanceTask };
