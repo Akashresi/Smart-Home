@@ -20,4 +20,4 @@ def predict_low_inventory(usage_data: list) -> list:
         threshold = item.get('threshold', 1)
         if qty <= threshold * 1.5:
             at_risk.append(item.get('itemName', 'Unknown item'))
-    return at_risk if at_risk else ["No items at risk"]\n
+    return at_risk if at_risk else ["No items at risk"]
