@@ -1,11 +1,26 @@
 const admin = require('firebase-admin');
-const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
 
-if (fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) {
-  const serviceAccount = require('.' + process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+
+if (serviceAccountPath) {
+  try {
+    const absolutePath = path.isAbsolute(serviceAccountPath) 
+      ? serviceAccountPath 
+      : path.join(process.cwd(), serviceAccountPath);
+    
+    const serviceAccount = require(absolutePath);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin initialized with service account.');
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin with service account:', error.message);
+    admin.initializeApp();
+  }
 } else {
-  console.warn("Firebase service account file not found. Auth will fail.");
+  console.warn('FIREBASE_SERVICE_ACCOUNT_PATH not found, initializing with default credentials.');
   admin.initializeApp();
 }
 
