@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import api, { pb } from '@/services/api';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import api from '@/services/api';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -18,10 +16,19 @@ export default function RegisterScreen() {
     if (password !== confirmPassword) return setError("Passwords don't match");
     try {
       setLoading(true); setError('');
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await api.post('/auth/register', { uid: cred.user.uid, email, name });
-      const token = await cred.user.getIdToken();
-      await SecureStore.setItemAsync('token', token);
+      // Create user in PocketBase
+      const record = await pb.collection('users').create({
+        email,
+        password,
+        passwordConfirm: confirmPassword,
+        name
+      });
+      // Auto login
+      await pb.collection('users').authWithPassword(email, password);
+      // Sync to MongoDB via Express
+      await api.post('/auth/register', { id: record.id, email, name });
+      // Save token locally
+      await SecureStore.setItemAsync('token', pb.authStore.token);
       router.replace('/');
     } catch (err: any) {
       setError(err.message);

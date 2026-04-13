@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { pb } from '@/services/api';
+import * as SecureStore from 'expo-secure-store';
 import taskService from '@/services/taskService';
 import inventoryService from '@/services/inventoryService';
 import expenseService from '@/services/expenseService';
@@ -40,11 +42,21 @@ export default function HomeScreen() {
     fetchData();
   };
 
+  const handleLogout = async () => {
+    pb.authStore.clear();
+    await SecureStore.deleteItemAsync('token');
+  };
+
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Dashboard</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.header}>Dashboard</Text>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.row}>
         <StatCard title="Pending Tasks" count={data.tasks} color="#3182ce" />
         <StatCard title="Low Stock" count={data.lowStock} color="#e53e3e" />
@@ -65,7 +77,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#f7fafc' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 15, color: '#2d3748' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  header: { fontSize: 24, fontWeight: 'bold', color: '#2d3748' },
+  logoutBtn: { backgroundColor: '#e53e3e', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  logoutText: { color: '#fff', fontWeight: 'bold' },
   subHeader: { fontSize: 18, fontWeight: 'bold', marginTop: 20, marginBottom: 10, color: '#4a5568' },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   empty: { color: '#a0aec0', fontStyle: 'italic' },

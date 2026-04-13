@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import api, { pb } from '@/services/api';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 
@@ -14,9 +13,16 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       setLoading(true); setError('');
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
-      await SecureStore.setItemAsync('token', token);
+      // Authenticate with PocketBase
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      // Ensure backend syncs user (optional but matches user's request)
+      await api.post('/auth/register', {
+        id: authData.record.id,
+        email: authData.record.email,
+        name: authData.record.name || email.split('@')[0]
+      });
+      // Pocketbase automatically stores in memory, save PB token to SecureStore if needed
+      await SecureStore.setItemAsync('token', pb.authStore.token);
       router.replace('/');
     } catch (err: any) {
       setError(err.message);

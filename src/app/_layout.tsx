@@ -1,7 +1,42 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { ThemeProvider } from '../context/ThemeContext';
+import { useEffect, useState } from 'react';
+import { pb } from '../services/api';
 
 export default function Layout() {
+  const [isLogged, setIsLogged] = useState(pb.authStore.isValid);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    SecureStore.getItemAsync('token').then(token => {
+      if (token) {
+        pb.authStore.save(token, null);
+        setIsLogged(true);
+      } else {
+        setIsLogged(pb.authStore.isValid);
+      }
+      setIsChecking(false);
+    });
+
+    return pb.authStore.onChange((token, model) => {
+      const valid = pb.authStore.isValid;
+      setIsLogged(valid);
+      if (!valid) {
+        router.replace('/(auth)/login');
+      } else {
+        router.replace('/');
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isChecking && !isLogged) {
+      router.replace('/(auth)/login');
+    }
+  }, [isLogged, isChecking]);
+
+  if (isChecking) return null;
+
   return (
     <ThemeProvider>
       <Tabs screenOptions={{ headerShown: true }}>

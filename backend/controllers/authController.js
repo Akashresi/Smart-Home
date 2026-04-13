@@ -1,15 +1,16 @@
 const User = require('../models/User');
 
 const registerUser = async (req, res) => {
+  // req.body now comes from PocketBase registration response
+  const { id, email, name } = req.body; // id = PocketBase record id
   try {
-    const { uid, email, name } = req.body;
-    const existing = await User.findOne({ $or: [{ uid }, { email }] });
-    if (existing) return res.status(409).json({ message: 'User already exists' });
-
-    const user = await User.create({ uid, email, name });
+    let user = await User.findOne({ uid: id });
+    if (!user) {
+      user = await User.create({ uid: id, email, name });
+    }
     res.status(201).json(user);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 };
 
