@@ -1,44 +1,26 @@
-import { Tabs, router } from 'expo-router';
+import { Tabs, router, Stack } from 'expo-router';
 import { ThemeProvider } from '../context/ThemeContext';
-import { useEffect, useState } from 'react';
-import { pb } from '../services/api';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
+import { Loading } from '../components/ui/Loading';
 
-export default function Layout() {
-  const [isLogged, setIsLogged] = useState(pb.authStore.isValid);
-  const [isChecking, setIsChecking] = useState(true);
+function RootContent() {
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    SecureStore.getItemAsync('token').then(token => {
-      if (token) {
-        pb.authStore.save(token, null);
-        setIsLogged(true);
-      } else {
-        setIsLogged(pb.authStore.isValid);
-      }
-      setIsChecking(false);
-    });
-
-    return pb.authStore.onChange((token, model) => {
-      const valid = pb.authStore.isValid;
-      setIsLogged(valid);
-      if (!valid) {
+    if (!isLoading) {
+      if (!isAuthenticated) {
         router.replace('/(auth)/login');
-      } else {
-        router.replace('/');
       }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!isChecking && !isLogged) {
-      router.replace('/(auth)/login');
     }
-  }, [isLogged, isChecking]);
+  }, [isLoading, isAuthenticated]);
 
-  if (isChecking) return null;
+  if (isLoading) {
+    return <Loading message="Starting Smart Home..." overlay />;
+  }
 
-  return (
-    <ThemeProvider>
+  if (isAuthenticated) {
+    return (
       <Tabs screenOptions={{ headerShown: true }}>
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
         <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
@@ -48,6 +30,22 @@ export default function Layout() {
         <Tabs.Screen name="household" options={{ title: 'Household' }} />
         <Tabs.Screen name="(auth)" options={{ href: null, headerShown: false }} />
       </Tabs>
-    </ThemeProvider>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+    </Stack>
+  );
+}
+
+export default function Layout() {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <RootContent />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

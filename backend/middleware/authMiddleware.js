@@ -5,9 +5,11 @@ const protect = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      // Verify token with PocketBase
-      pb.authStore.save(token, null);
-      const authData = await pb.collection('users').authRefresh();
+      // Verify token with PocketBase using a fresh instance per request
+      const PocketBase = require('pocketbase/cjs');
+      const pbInstance = new PocketBase(process.env.POCKETBASE_URL || 'http://127.0.0.1:8090');
+      pbInstance.authStore.save(token, null);
+      const authData = await pbInstance.collection('users').authRefresh();
       req.user = {
         uid: authData.record.id,
         email: authData.record.email,
@@ -16,22 +18,9 @@ const protect = async (req, res, next) => {
       next();
     } catch (error) {
       console.error('Auth error:', error.message);
-      
-      // FOR EASY LOCAL TESTING ONLY — keep the mock version temporarily:
-      if (process.env.NODE_ENV === 'development') {
-        req.user = { uid: 'mock-user-123', email: 'test@test.com', name: 'Test User' };
-        return next();
-      }
-
       return res.status(401).json({ message: 'Not authorized, invalid token' });
     }
   } else {
-    // FOR EASY LOCAL TESTING ONLY — keep the mock version temporarily:
-    if (process.env.NODE_ENV === 'development') {
-        req.user = { uid: 'mock-user-123', email: 'test@test.com', name: 'Test User' };
-        return next();
-    }
-
     return res.status(401).json({ message: 'Not authorized, no token' });
   }
 };

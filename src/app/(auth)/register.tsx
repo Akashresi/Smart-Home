@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import api, { pb } from '@/services/api';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card } from '@/components/ui/Card';
+import { theme } from '@/theme';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -11,55 +15,151 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { login } = useAuth();
 
   const handleRegister = async () => {
-    if (password !== confirmPassword) return setError("Passwords don't match");
+    if (!name || !email || !password || !confirmPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords don't match");
+      return;
+    }
+
     try {
-      setLoading(true); setError('');
+      setLoading(true);
+      setError('');
+      
       // Create user in PocketBase
       const record = await pb.collection('users').create({
         email,
         password,
         passwordConfirm: confirmPassword,
-        name
+        name,
+        role: 'member'
       });
+      
       // Auto login
-      await pb.collection('users').authWithPassword(email, password);
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      
       // Sync to MongoDB via Express
-      await api.post('/auth/register', { id: record.id, email, name });
-      // Save token locally
-      await SecureStore.setItemAsync('token', pb.authStore.token);
+      try {
+        await api.post('/auth/register', { id: record.id, email, name });
+      } catch (mongoErr) {
+        console.error('Failed to sync to MongoDB', mongoErr);
+        // Continue anyway as PB is the primary auth
+      }
+      
+      await login(pb.authStore.token, authData.record);
       router.replace('/');
     } catch (err: any) {
-      setError(err.message);
-    } finally { setLoading(false); }
+      setError(err.message || 'Registration failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Create Account</Text>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
-      <TextInput style={styles.input} placeholder="Confirm Password" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
-      <TouchableOpacity style={styles.btn} onPress={handleRegister} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Register</Text>}
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.link}>
-        <Text style={styles.linkText}>Already have an account? Login</Text>
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.header}>Create Account</Text>
+          <Text style={styles.subtitle}>Join our smart home community</Text>
+        </View>
+
+        <Card style={styles.formCard}>
+          <Input
+            label="Full Name"
+            placeholder="John Doe"
+            value={name}
+            onChangeText={setName}
+          />
+          <Input
+            label="Email Address"
+            placeholder="name@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <Input
+            label="Confirm Password"
+            placeholder="••••••••"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+
+          {error && <Text style={styles.errorText}>{error}</Text>}
+
+          <Button
+            title="Register"
+            onPress={handleRegister}
+            loading={loading}
+            style={styles.registerBtn}
+          />
+
+          <Button
+            title="Already have an account? Login"
+            variant="ghost"
+            onPress={() => router.push('/(auth)/login')}
+            style={styles.linkBtn}
+          />
+        </Card>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#f7fafc' },
-  header: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#2d3748' },
-  input: { backgroundColor: '#fff', padding: 15, borderRadius: 8, marginBottom: 15, borderWidth: 1, borderColor: '#e2e8f0' },
-  btn: { backgroundColor: '#48bb78', padding: 15, borderRadius: 8, alignItems: 'center' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  link: { marginTop: 20, alignItems: 'center' },
-  linkText: { color: '#48bb78', fontSize: 14 },
-  errorText: { color: '#e53e3e', marginBottom: 15, textAlign: 'center' }
-});
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.neutral[50],
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: theme.spacing.lg,
+  },
+  headerContainer: {
+    marginBottom: theme.spacing.xl,
+    alignItems: 'center',
+  },
+  header: {
+    ...theme.typography.presets.h1,
+    color: theme.colors.success,
+  },
+  subtitle: {
+    ...theme.typography.presets.body,
+    color: theme.colors.neutral[500],
+    marginTop: theme.spacing.xs,
+  },
+  formCard: {
+    padding: theme.spacing.lg,
+  },
+  registerBtn: {
+    marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.success,
+  },
+  linkBtn: {
+    marginTop: theme.spacing.sm,
+  },
+  errorText: {
+    ...theme.typography.presets.caption,
+    color: theme.colors.error,
+    textAlign: 'center',
+    marginBottom: theme.spacing.md,
+  },
+});
