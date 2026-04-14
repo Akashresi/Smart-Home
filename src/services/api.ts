@@ -2,17 +2,6 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
-import PocketBase from 'pocketbase';
-
-const getPbUrl = () => {
-  const hostUri = Constants?.expoConfig?.hostUri;
-  if (hostUri) {
-    const pcIpAddress = hostUri.split(':')[0];
-    return `http://${pcIpAddress}:8090`;
-  }
-  return 'http://127.0.0.1:8090';
-};
-export const pb = new PocketBase(getPbUrl());
 
 const getBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL && !process.env.EXPO_PUBLIC_API_URL.includes('localhost')) {
@@ -29,10 +18,7 @@ const getBaseUrl = () => {
 const api = axios.create({ baseURL: getBaseUrl() });
 
 api.interceptors.request.use(async (config) => {
-  let token = await SecureStore.getItemAsync('token');
-  if (!token && pb.authStore.isValid) {
-    token = pb.authStore.token;
-  }
+  const token = await SecureStore.getItemAsync('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -40,13 +26,39 @@ api.interceptors.request.use(async (config) => {
 });
 
 api.interceptors.response.use(
-  res => res,
-  async err => {
-    if (err.response?.status === 401) {
-      await SecureStore.deleteItemAsync('token');
-      router.replace('/(auth)/login');
+  (res) => res,
+  async (err) => {
+    const originalRequest = err.config;
+
+    // Handle 401 Unauthorized
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        if (refreshToken) {
+          // Attempt to refresh the token
+          const response = await axios.post(`${getBaseUrl()}/auth/refresh`, { token: refreshToken });
+          const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+          await SecureStore.setItemAsync('token', accessToken);
+          await SecureStore.setItemAsync('refreshToken', newRefreshToken);
+
+          // Retry the original request with the new token
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshErr) {
+        console.error('Refresh token failed:', refreshErr);
+        // Clear tokens and redirect to login if refresh fails
+        await SecureStore.deleteItemAsync('token');
+        await SecureStore.deleteItemAsync('refreshToken');
+        await SecureStore.deleteItemAsync('user');
+        router.replace('/(auth)/login');
+      }
     }
+    
     return Promise.reject(err);
   }
 );
+
 export default api;

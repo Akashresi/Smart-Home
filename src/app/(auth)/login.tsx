@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { pb } from '@/services/api';
+import api from '@/services/api';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -25,12 +25,13 @@ export default function LoginScreen() {
       setLoading(true);
       setError('');
       
-      const authData = await pb.collection('users').authWithPassword(email, password);
+      const response = await api.post('/auth/login', { email, password });
+      const { accessToken, refreshToken, user } = response.data;
       
-      await login(pb.authStore.token, authData.record);
+      await login(accessToken, refreshToken, user);
       router.replace('/');
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.message || err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,6 @@ export default function LoginScreen() {
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
-            error={error && error.toLowerCase().includes('email') ? error : undefined}
           />
           <Input
             label="Password"
@@ -65,7 +65,7 @@ export default function LoginScreen() {
             onChangeText={setPassword}
           />
 
-          {error && !error.toLowerCase().includes('email') && (
+          {error && (
             <Text style={styles.errorText}>{error}</Text>
           )}
 
@@ -125,5 +125,6 @@ const styles = StyleSheet.create({
     color: theme.colors.error,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
-});
+});

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import api, { pb } from '@/services/api';
+import api from '@/services/api';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -32,30 +32,21 @@ export default function RegisterScreen() {
       setLoading(true);
       setError('');
       
-      // Create user in PocketBase
-      const record = await pb.collection('users').create({
-        email,
-        password,
-        passwordConfirm: confirmPassword,
+      await api.post('/auth/register', { 
+        email, 
+        password, 
         name,
-        role: 'member'
+        username: email.split('@')[0] // Default username
       });
       
-      // Auto login
-      const authData = await pb.collection('users').authWithPassword(email, password);
+      // Auto login after registration
+      const loginResponse = await api.post('/auth/login', { email, password });
+      const { accessToken, refreshToken, user } = loginResponse.data;
       
-      // Sync to MongoDB via Express
-      try {
-        await api.post('/auth/register', { id: record.id, email, name });
-      } catch (mongoErr) {
-        console.error('Failed to sync to MongoDB', mongoErr);
-        // Continue anyway as PB is the primary auth
-      }
-      
-      await login(pb.authStore.token, authData.record);
+      await login(accessToken, refreshToken, user);
       router.replace('/');
     } catch (err: any) {
-      setError(err.message || 'Registration failed.');
+      setError(err.response?.data?.message || err.message || 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -161,5 +152,6 @@ const styles = StyleSheet.create({
     color: theme.colors.error,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
-});
+});
