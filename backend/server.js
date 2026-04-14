@@ -1,15 +1,22 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const http = require('http');
 const connectDB = require('./config/db');
 const config = require('./config/config');
 const rateLimit = require('express-rate-limit');
+const initSocket = require('./realtime/socketHandler');
 require('./jobs/reminderJob'); // Start cron jobs
 
 // Connect to Database
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io
+const io = initSocket(server);
+app.set('io', io); // Make io accessible in routes if needed
 
 // Security Headers
 app.use(helmet());
@@ -17,13 +24,13 @@ app.use(helmet());
 // Set up rate limiting
 const limiter = rateLimit({ 
   windowMs: 15 * 60 * 1000, 
-  max: 100,
+  max: 1000, // Increased for dev/socket heartbeats
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use(limiter);
 
 // Restrict CORS
-app.use(cors({ origin: [config.cors.origin] }));
+app.use(cors({ origin: [config.cors.origin, 'http://localhost:8081'] }));
 app.use(express.json());
 
 // Auth limiter for sensitive routes
@@ -44,6 +51,8 @@ app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/maintenance', require('./routes/maintenanceRoutes'));
 app.use('/api/alerts', require('./routes/alertRoutes'));
 app.use('/api/household', require('./routes/householdRoutes'));
+app.use('/api/devices', require('./routes/deviceRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -54,4 +63,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = config.port;
-app.listen(PORT, () => console.log(`Server running in ${config.env} mode on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running in ${config.env} mode on port ${PORT}`));

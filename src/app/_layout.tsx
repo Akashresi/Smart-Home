@@ -23,6 +23,7 @@ function RootContent() {
     return (
       <Tabs screenOptions={{ headerShown: true }}>
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
+        <Tabs.Screen name="devices" options={{ title: 'Devices' }} />
         <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
         <Tabs.Screen name="inventory" options={{ title: 'Inventory' }} />
         <Tabs.Screen name="maintenance" options={{ title: 'Maintenance' }} />

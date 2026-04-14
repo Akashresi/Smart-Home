@@ -57,6 +57,9 @@ const userSchema = new mongoose.Schema({
   },
   lockUntil: {
     type: Number
+  },
+  expoPushToken: {
+    type: String
   }
 }, { timestamps: true });
 

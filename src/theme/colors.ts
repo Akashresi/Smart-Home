@@ -1,26 +1,48 @@
 export const colors = {
-  primary: '#208AEF',
-  primaryDark: '#1a5fa0',
-  success: '#38a169',
-  error: '#e53e3e',
-  warning: '#dd6b20',
-  info: '#3182ce',
-  white: '#ffffff',
+  // Brand Colors
+  primary: '#208AEF', // Vibrant Blue
+  primaryLight: '#E3F2FD',
+  primaryDark: '#1565C0',
+  
+  secondary: '#673AB7', // Deep Purple
+  accent: '#FF4081',    // Pink Accent
+  
+  // Semantic Colors
+  success: '#00C853',
+  error: '#FF1744',
+  warning: '#FFAB00',
+  info: '#00B0FF',
+  
+  // Neutral Palette
+  white: '#FFFFFF',
   black: '#000000',
   neutral: {
-    50: '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827',
+    50: '#F8F9FA',
+    100: '#F1F3F5',
+    200: '#E9ECEF',
+    300: '#DEE2E6',
+    400: '#CED4DA',
+    500: '#ADB5BD',
+    600: '#868E96',
+    700: '#495057',
+    800: '#343A40',
+    900: '#212529',
   },
+
+  // Premium Backgrounds
+  background: '#F0F2F5',
+  surface: '#FFFFFF',
+  
+  // Special Effects
   glass: {
-    light: 'rgba(255, 255, 255, 0.7)',
-    dark: 'rgba(0, 0, 0, 0.5)',
+    light: 'rgba(255, 255, 255, 0.8)',
+    medium: 'rgba(255, 255, 255, 0.5)',
+    dark: 'rgba(0, 0, 0, 0.4)',
+  },
+  
+  gradients: {
+    primary: ['#208AEF', '#1565C0'],
+    success: ['#00C853', '#009624'],
+    danger: ['#FF1744', '#D50000'],
   }
 };
