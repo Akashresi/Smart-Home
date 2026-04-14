@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const householdSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  adminUid: { type: String, required: true },
-  memberUids: [{ type: String }],
+  adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  memberIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   inviteCode: { type: String, unique: true }
 }, { timestamps: true });
 

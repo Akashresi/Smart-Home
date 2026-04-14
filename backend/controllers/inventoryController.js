@@ -4,7 +4,7 @@ const Alert = require('../models/Alert');
 
 const getInventory = async (req, res) => {
   try {
-    const inv = await Inventory.find({ userId: req.user.uid });
+    const inv = await Inventory.find({ userId: req.user._id });
     res.json(inv);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -13,7 +13,7 @@ const getInventory = async (req, res) => {
 
 const createInventoryItem = async (req, res) => {
   try {
-    const item = await Inventory.create({ ...req.body, userId: req.user.uid });
+    const item = await Inventory.create({ ...req.body, userId: req.user._id });
     res.status(201).json(item);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -22,12 +22,12 @@ const createInventoryItem = async (req, res) => {
 
 const updateInventoryItem = async (req, res) => {
   try {
-    const oldItem = await Inventory.findOne({ _id: req.params.id, userId: req.user.uid });
+    const oldItem = await Inventory.findOne({ _id: req.params.id, userId: req.user._id });
     if (!oldItem) return res.status(404).json({ message: 'Inventory item not found' });
     
     const usedAmount = oldItem.quantity - (req.body.quantity || oldItem.quantity);
     const item = await Inventory.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.uid },
+      { _id: req.params.id, userId: req.user._id },
       req.body,
       { new: true }
     );
@@ -39,7 +39,7 @@ const updateInventoryItem = async (req, res) => {
           amount: cost,
           category: 'Supplies',
           linkedInventoryItem: item._id,
-          userId: req.user.uid
+          userId: req.user._id
         });
       }
     }
@@ -48,7 +48,7 @@ const updateInventoryItem = async (req, res) => {
       await Alert.create({
         type: 'low_stock',
         message: `${item.itemName} is reaching low stock (Current: ${item.quantity})`,
-        userId: req.user.uid
+        userId: req.user._id
       });
     }
     res.json(item);
@@ -59,7 +59,7 @@ const updateInventoryItem = async (req, res) => {
 
 const deleteInventoryItem = async (req, res) => {
   try {
-    const result = await Inventory.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
+    const result = await Inventory.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!result) return res.status(404).json({ message: 'Inventory item not found' });
     res.json({ message: 'Deleted successfully' });
   } catch (error) {

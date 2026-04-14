@@ -2,7 +2,7 @@ const Maintenance = require('../models/Maintenance');
 
 const getMaintenanceTasks = async (req, res) => {
   try {
-    const tasks = await Maintenance.find({ userId: req.user.uid });
+    const tasks = await Maintenance.find({ userId: req.user._id });
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -11,7 +11,7 @@ const getMaintenanceTasks = async (req, res) => {
 
 const createMaintenanceTask = async (req, res) => {
   try {
-    const task = await Maintenance.create({ ...req.body, userId: req.user.uid });
+    const task = await Maintenance.create({ ...req.body, userId: req.user._id });
     res.status(201).json(task);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -21,7 +21,7 @@ const createMaintenanceTask = async (req, res) => {
 const updateMaintenanceTask = async (req, res) => {
   try {
     const task = await Maintenance.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.uid },
+      { _id: req.params.id, userId: req.user._id },
       req.body,
       { new: true }
     );
@@ -34,7 +34,7 @@ const updateMaintenanceTask = async (req, res) => {
 
 const deleteMaintenanceTask = async (req, res) => {
   try {
-    const result = await Maintenance.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
+    const result = await Maintenance.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!result) return res.status(404).json({ message: 'Maintenance record not found' });
     res.json({ message: 'Maintenance record deleted' });
   } catch (error) {

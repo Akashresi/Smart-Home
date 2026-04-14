@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { pb } from '@/services/api';
-import * as SecureStore from 'expo-secure-store';
+import { useAuth } from '@/context/AuthContext';
 import taskService from '@/services/taskService';
 import inventoryService from '@/services/inventoryService';
 import expenseService from '@/services/expenseService';
@@ -16,6 +15,7 @@ export default function HomeScreen() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { logout } = useAuth();
 
   const fetchData = async () => {
     try {
@@ -43,8 +43,7 @@ export default function HomeScreen() {
   };
 
   const handleLogout = async () => {
-    pb.authStore.clear();
-    await SecureStore.deleteItemAsync('token');
+    await logout();
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
