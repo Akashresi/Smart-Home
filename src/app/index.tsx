@@ -31,7 +31,12 @@ export default function HomeScreen() {
       setAlerts(aRes.data);
 
       const aiRes = await aiService.getSuggestions(iRes.data);
-      setAiSuggestions(aiRes.data.suggestions || []);
+      const inventorySuggestions = aiRes.data.suggestions || [];
+      
+      const aiDeviceRes = await aiService.getDeviceRecommendations({ usage_history: [2, 4, 1, 5, 3], room_occupancy: false });
+      const deviceSuggestion = aiDeviceRes.data.suggestion;
+
+      setAiSuggestions([...inventorySuggestions, deviceSuggestion]);
     } catch (err) { console.log(err); } finally { setLoading(false); }
   };
 

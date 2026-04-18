@@ -7,8 +7,8 @@ const getSuggestions = async (req, res) => {
     
     // Proxy request to Python AI Service
     const aiResponse = await axios.post(
-      `${config.aiService.url}/api/v1/predict/inventory`,
-      { data: inventoryData },
+      `${config.aiService.url}/api/v1/predict-inventory`,
+      { items: inventoryData },
       {
         headers: {
           'Authorization': `Bearer ${config.aiService.apiKey}`
@@ -19,8 +19,26 @@ const getSuggestions = async (req, res) => {
     res.json(aiResponse.data);
   } catch (error) {
     console.error('AI Service Error:', error.message);
-    res.status(500).json({ message: 'AI Suggestion service temporarily unavailable' });
+    res.json({ suggestions: [], message: 'AI Suggestion service temporarily unavailable' });
   }
 };
 
-module.exports = { getSuggestions };
+const getDeviceRecommendations = async (req, res) => {
+  try {
+    const aiResponse = await axios.post(
+      `${config.aiService.url}/api/v1/recommend`,
+      req.body,
+      {
+        headers: {
+          'Authorization': `Bearer ${config.aiService.apiKey}`
+        }
+      }
+    );
+    res.json(aiResponse.data);
+  } catch (error) {
+    console.error('AI Service Error:', error.message);
+    res.json({ suggestion: 'AI recommendations are currently offline', predictedSavings: 0 });
+  }
+};
+
+module.exports = { getSuggestions, getDeviceRecommendations };

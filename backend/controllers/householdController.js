@@ -10,7 +10,8 @@ const createHousehold = async (req, res) => {
       memberIds: [req.user._id],
       inviteCode
     });
-    await User.findByIdAndUpdate(req.user._id, { householdId: household._id });
+    // Set the creator's role to 'admin'
+    await User.findByIdAndUpdate(req.user._id, { householdId: household._id, role: 'admin' });
     res.status(201).json(household);
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { connect as io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 
@@ -13,7 +13,7 @@ const getSocketUrl = () => {
 };
 
 export const useRealtime = () => {
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<ReturnType<typeof io> | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export const useRealtime = () => {
         console.log('Socket disconnected');
       });
 
-      socket.on('error', (err) => {
+      socket.on('connect_error', (err: Error) => {
         console.error('Socket error:', err);
       });
 

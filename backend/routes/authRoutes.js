@@ -6,5 +6,6 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
+router.get('/health', (req, res) => res.json({ status: 'ok', message: 'Backend is reachable!' }));
 
 module.exports = router;

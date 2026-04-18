@@ -18,6 +18,10 @@ const server = http.createServer(app);
 const io = initSocket(server);
 app.set('io', io); // Make io accessible in routes if needed
 
+// Initialize Automation Engine
+const AutomationEngine = require('./jobs/automationJob');
+new AutomationEngine(io);
+
 // Security Headers
 app.use(helmet());
 
@@ -29,9 +33,18 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Restrict CORS
-app.use(cors({ origin: [config.cors.origin, 'http://localhost:8081'] }));
+// Allow CORS for mobile app development
+app.use(cors());
 app.use(express.json());
+
+// Global handler for JSON parsing errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ message: 'Invalid JSON payload. Please check your syntax.' });
+  }
+  next();
+});
+
 
 // Auth limiter for sensitive routes
 const authLimiter = rateLimit({

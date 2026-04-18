@@ -3,7 +3,7 @@ const DeviceHistory = require('../models/DeviceHistory');
 
 const getDevices = async (req, res) => {
   try {
-    if (!req.user.householdId) return res.status(400).json({ message: 'User not in a household' });
+    if (!req.user.householdId) return res.json([]);
     const devices = await SmartDevice.find({ householdId: req.user.householdId });
     res.json(devices);
   } catch (error) {

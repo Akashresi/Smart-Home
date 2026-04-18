@@ -39,10 +39,29 @@ const initSocket = (server) => {
       console.log(`User joined room: ${householdRoom}`);
     }
 
-    socket.on('device:status_change', (data) => {
-      // Broadcast status change to todos in the household room
+    socket.on('device:status_change', async (data) => {
+      // Update DB and Broadcast status change to others in the household room
       if (socket.user.householdId) {
-        socket.to(`household_${socket.user.householdId.toString()}`).emit('device:status_updated', data);
+        try {
+          const SmartDevice = require('../models/SmartDevice');
+          const DeviceHistory = require('../models/DeviceHistory');
+          
+          await SmartDevice.findByIdAndUpdate(data.deviceId, { 
+            status: data.status, value: data.value, lastSeen: new Date() 
+          });
+
+          // Log history
+          await DeviceHistory.create({
+            deviceId: data.deviceId,
+            action: data.status ? `status_${data.status}` : 'value_changed',
+            value: data.value || data.status,
+            userId: socket.user._id
+          });
+
+          socket.to(`household_${socket.user.householdId.toString()}`).emit('device:status_updated', data);
+        } catch (err) {
+          console.error('Socket device sync error:', err);
+        }
       }
     });
 

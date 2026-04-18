@@ -15,7 +15,12 @@ const getBaseUrl = () => {
   return 'http://localhost:5000/api';
 };
 
-const api = axios.create({ baseURL: getBaseUrl() });
+const api = axios.create({ 
+  baseURL: getBaseUrl(),
+  timeout: 10000 // 10 second timeout
+});
+
+console.log('Connecting to Backend at:', getBaseUrl());
 
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('token');
