@@ -13,6 +13,8 @@ interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   containerStyle?: ViewStyle;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -20,20 +22,27 @@ export const Input: React.FC<InputProps> = ({
   error,
   containerStyle,
   style,
+  leftIcon,
+  rightIcon,
   ...props
 }) => {
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[
-          styles.input,
-          error ? styles.inputError : null,
-          style,
-        ]}
-        placeholderTextColor={colors.neutral[400]}
-        {...props}
-      />
+      <View style={styles.inputWrapper}>
+        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+        <TextInput
+          style={[
+            styles.input,
+            leftIcon ? { paddingLeft: spacing.xl * 1.5 } : null,
+            error ? styles.inputError : null,
+            style,
+          ]}
+          placeholderTextColor={colors.neutral[400]}
+          {...props}
+        />
+        {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
+      </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
@@ -50,6 +59,19 @@ const styles = StyleSheet.create({
     color: colors.neutral[700],
     fontWeight: '600',
   },
+  inputWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  rightIcon: {
+    position: 'absolute',
+    right: spacing.md,
+  },
+  leftIcon: {
+    position: 'absolute',
+    left: spacing.md,
+    zIndex: 1,
+  },
   input: {
     ...typography.presets.body,
     backgroundColor: colors.neutral[50],
@@ -57,6 +79,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[200],
     borderRadius: spacing.borderRadius.md,
     paddingHorizontal: spacing.md,
+    paddingRight: spacing.xl * 1.5, // Make room for icon
     paddingVertical: spacing.sm,
     color: colors.neutral[900],
   },

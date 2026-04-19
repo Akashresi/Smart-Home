@@ -39,4 +39,29 @@ const getMembers = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-module.exports = { createHousehold, joinHousehold, getMembers };
+const removeMember = async (req, res) => {
+  try {
+    const { memberId } = req.body;
+    const userToRemove = await User.findById(memberId);
+    if (!userToRemove) return res.status(404).json({ message: 'User not found' });
+
+    const household = await Household.findById(req.user.householdId);
+    household.memberIds = household.memberIds.filter(id => id.toString() !== memberId);
+    await household.save();
+
+    userToRemove.householdId = null;
+    await userToRemove.save();
+
+    res.json({ message: 'Member removed successfully' });
+  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+};
+
+const updateMemberRole = async (req, res) => {
+  try {
+    const { memberId, role } = req.body;
+    await User.findByIdAndUpdate(memberId, { role });
+    res.json({ message: 'Role updated successfully' });
+  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+};
+
+module.exports = { createHousehold, joinHousehold, getMembers, removeMember, updateMemberRole };

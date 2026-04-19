@@ -18,9 +18,7 @@ const server = http.createServer(app);
 const io = initSocket(server);
 app.set('io', io); // Make io accessible in routes if needed
 
-// Initialize Automation Engine
-const AutomationEngine = require('./jobs/automationJob');
-new AutomationEngine(io);
+
 
 // Security Headers
 app.use(helmet());
@@ -64,7 +62,7 @@ app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/maintenance', require('./routes/maintenanceRoutes'));
 app.use('/api/alerts', require('./routes/alertRoutes'));
 app.use('/api/household', require('./routes/householdRoutes'));
-app.use('/api/devices', require('./routes/deviceRoutes'));
+
 app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Global Error Handler

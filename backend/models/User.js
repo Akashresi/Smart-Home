@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   role: { 
     type: String, 
-    enum: ['admin', 'member', 'guest'], 
+    enum: ['admin', 'member'], 
     default: 'member' 
   },
   status: {
@@ -62,10 +62,5 @@ const userSchema = new mongoose.Schema({
     type: String
   }
 }, { timestamps: true });
-
-// Virtual field for checking if account is locked
-userSchema.virtual('isLocked').get(function() {
-  return !!(this.lockUntil && this.lockUntil > Date.now());
-});
 
 module.exports = mongoose.model('User', userSchema);

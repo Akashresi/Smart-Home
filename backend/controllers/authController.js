@@ -5,7 +5,7 @@ const auditService = require('../services/auditService');
 
 const register = async (req, res) => {
   try {
-    const { email, password, name, username } = req.body;
+    const { email, password, name, username, role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -20,7 +20,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       name,
       username,
-      role: 'member'
+      role: role || 'member'
     });
 
     await auditService.logAuthEvent('register', {
