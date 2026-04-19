@@ -1,36 +1,39 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/theme';
+import { useTheme } from '../context/ThemeContext';
 import { Card } from './ui/Card';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export default function MaintenanceCard({ item, onComplete, onDelete }: any) {
+  const { colors } = useTheme();
   const isOverdue = new Date(item.dueDate) < new Date() && item.status !== 'completed';
   const isCompleted = item.status === 'completed';
 
   return (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <View style={[styles.iconCircle, { backgroundColor: isOverdue ? theme.colors.error + '15' : theme.colors.info + '15' }]}>
+          <View style={[styles.iconCircle, { backgroundColor: isOverdue ? colors.error + '15' : colors.primary + '15' }]}>
             <Ionicons 
               name={isCompleted ? "checkmark-done" : "construct-outline"} 
               size={24} 
-              color={isOverdue ? theme.colors.error : (isCompleted ? theme.colors.success : theme.colors.info)} 
+              color={isOverdue ? colors.error : (isCompleted ? colors.success : colors.primary)} 
             />
           </View>
         </View>
         
         <View style={styles.info}>
-          <Text style={[styles.title, isCompleted && styles.completedText]}>{item.deviceName}</Text>
+          <Text style={[styles.title, { color: colors.black }, isCompleted && styles.completedText]}>{item.deviceName}</Text>
           <View style={styles.metaRow}>
-            <Ionicons name="calendar-outline" size={12} color={isOverdue ? theme.colors.error : theme.colors.neutral[400]} />
-            <Text style={[styles.metaText, isOverdue && styles.overdueText]}>
+            <Ionicons name="calendar-outline" size={12} color={isOverdue ? colors.error : colors.neutral[400]} />
+            <Text style={[styles.metaText, { color: colors.neutral[500] }, isOverdue && styles.overdueText]}>
               Due: {new Date(item.dueDate).toLocaleDateString()}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: isCompleted ? theme.colors.success + '10' : theme.colors.neutral[50] }]}>
-            <Text style={[styles.statusText, { color: isCompleted ? theme.colors.success : theme.colors.neutral[500] }]}>
+          <View style={[styles.statusBadge, { backgroundColor: isCompleted ? colors.success + '10' : colors.neutral[50] }]}>
+            <Text style={[styles.statusText, { color: isCompleted ? colors.success : colors.neutral[500] }]}>
               {item.status.toUpperCase()}
             </Text>
           </View>
@@ -38,12 +41,12 @@ export default function MaintenanceCard({ item, onComplete, onDelete }: any) {
 
         <View style={styles.actions}>
           {!isCompleted && (
-            <TouchableOpacity style={styles.actionBtn} onPress={onComplete}>
-              <Ionicons name="checkbox-outline" size={22} color={theme.colors.success} />
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.neutral[50] }]} onPress={onComplete}>
+              <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.actionBtn} onPress={onDelete}>
-            <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.neutral[50] }]} onPress={onDelete}>
+            <Ionicons name="trash-outline" size={24} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -52,19 +55,19 @@ export default function MaintenanceCard({ item, onComplete, onDelete }: any) {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 0, marginBottom: theme.spacing.md },
+  card: { padding: 0, marginBottom: spacing.md },
   content: {
     flexDirection: 'row',
-    padding: theme.spacing.md,
+    padding: spacing.md,
     alignItems: 'center',
   },
   iconContainer: {
-    marginRight: theme.spacing.md,
+    marginRight: spacing.md,
   },
   iconCircle: {
     width: 50,
     height: 50,
-    borderRadius: 15,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -73,12 +76,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: { 
-    ...theme.typography.presets.h3,
-    color: theme.colors.neutral[800],
+    fontSize: 16,
+    fontFamily: typography.bold,
   },
   completedText: {
     textDecorationLine: 'line-through',
-    color: theme.colors.neutral[400],
+    opacity: 0.5,
   },
   metaRow: {
     flexDirection: 'row',
@@ -87,30 +90,31 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: theme.colors.neutral[500],
+    fontFamily: typography.medium,
   },
   overdueText: {
-    color: theme.colors.error,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   statusBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 8,
     marginTop: 4,
   },
   statusText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: typography.bold,
   },
   actions: { 
     flexDirection: 'row',
     gap: 8,
   },
   actionBtn: {
-    padding: 8,
-    backgroundColor: theme.colors.neutral[50],
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });

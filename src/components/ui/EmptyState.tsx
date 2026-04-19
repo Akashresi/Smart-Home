@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 
 interface EmptyStateProps {
   icon: keyof typeof Ionicons.prototype.props.name;
@@ -9,44 +11,51 @@ interface EmptyStateProps {
   message: string;
 }
 
-export const EmptyState = ({ icon, title, message }: EmptyStateProps) => {
+export default function EmptyState({ icon, title, message }: EmptyStateProps) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
-      <View style={styles.iconCircle}>
-        <Ionicons name={icon as any} size={48} color={theme.colors.neutral[300]} />
+      <View style={[styles.iconCircle, { backgroundColor: colors.surface }]}>
+        <Ionicons name={icon as any} size={48} color={colors.primary + '40'} />
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.title, { color: colors.black }]}>{title}</Text>
+      <Text style={[styles.message, { color: colors.neutral[500] }]}>{message}</Text>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.xl,
-    marginTop: theme.spacing.xl,
+    padding: spacing.xxl,
+    marginTop: spacing.xxl,
   },
   iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: theme.colors.neutral[50],
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: spacing.xl,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   title: {
-    ...theme.typography.presets.h2,
-    color: theme.colors.neutral[800],
+    fontSize: 22,
+    fontFamily: typography.bold,
     textAlign: 'center',
   },
   message: {
-    ...theme.typography.presets.body,
-    color: theme.colors.neutral[500],
+    fontSize: 15,
+    fontFamily: typography.medium,
     textAlign: 'center',
-    marginTop: theme.spacing.sm,
+    marginTop: spacing.sm,
+    lineHeight: 22,
   },
 });

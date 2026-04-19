@@ -1,76 +1,276 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
-import InventoryItem from '@/components/InventoryItem';
-import ExpenseSummary from '@/components/ExpenseSummary';
-import inventoryService from '@/services/inventoryService';
-import expenseService from '@/services/expenseService';
-
-import { EmptyState } from '@/components/ui/EmptyState';
-import { theme } from '@/theme';
+import React, { useEffect, useState, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Modal, 
+  ScrollView,
+  RefreshControl,
+  Alert
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import inventoryService from '../services/inventoryService';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Loading } from '../components/ui/Loading';
+import EmptyState from '../components/ui/EmptyState';
+import InventoryItem from '../components/InventoryItem';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export default function InventoryScreen() {
+  const { colors, isDark } = useTheme();
   const [inventory, setInventory] = useState<any[]>([]);
-  const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Form State
+  const [itemName, setItemName] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [threshold, setThreshold] = useState('1');
+  const [category, setCategory] = useState('General');
+  const [cost, setCost] = useState(''); // Cost for auto-sync with spending
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [iRes, eRes] = await Promise.all([inventoryService.getInventory(), expenseService.getExpenses()]);
-      setInventory(iRes.data); 
-      setExpenses(eRes.data);
-    } catch (err) {} finally { 
-      setLoading(false); 
+      const response = await inventoryService.getInventory();
+      setInventory(response.data);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to fetch inventory');
+    } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
-
   useEffect(() => { fetchData(); }, []);
 
-  const delInv = async (id: string) => { await inventoryService.deleteInventory(id); fetchData(); };
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, []);
 
-  if (loading && !refreshing) return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.success} /></View>;
+  const handleAddItem = async () => {
+    if (!itemName || !quantity) {
+      Alert.alert('Error', 'Please fill in required fields');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await inventoryService.addInventory({
+        itemName,
+        quantity: parseInt(quantity),
+        threshold: parseInt(threshold),
+        category,
+        cost: cost ? parseFloat(cost) : 0
+      });
+      setModalVisible(false);
+      resetForm();
+      fetchData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add item');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    Alert.alert('Delete Item', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await inventoryService.deleteInventory(id);
+          fetchData();
+        } catch (error) {
+          Alert.alert('Error', 'Failed to delete item');
+        }
+      }}
+    ]);
+  };
+
+  const resetForm = () => {
+    setItemName('');
+    setQuantity('');
+    setThreshold('1');
+    setCategory('General');
+    setCost('');
+  };
+
+  if (loading && !refreshing) return <Loading />;
 
   return (
-    <View style={styles.container}>
-      <ExpenseSummary expenses={expenses} />
-      <Text style={styles.header}>Pantry & Inventory</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList 
         data={inventory} 
-        refreshing={refreshing} 
-        onRefresh={onRefresh} 
-        keyExtractor={i => i._id}
+        renderItem={({ item }) => (
+          <InventoryItem item={item} onDelete={() => handleDelete(item._id)} />
+        )}
+        keyExtractor={item => item._id}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => <InventoryItem item={item} onDelete={delInv} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+        ListHeaderComponent={
+          <View style={styles.headerTitleContainer}>
+            <Text style={[styles.headerTitle, { color: colors.black }]}>Pantry & Stock</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.neutral[500] }]}>
+              {inventory.length} items tracked in your home
+            </Text>
+          </View>
+        }
         ListEmptyComponent={
           <EmptyState 
             icon="basket-outline" 
             title="Empty pantry" 
-            message="Start tracking your household items here! 🍎" 
+            message="No items found. Tap the + button to add your first inventory item! 🍎" 
           />
         } 
       />
+
+      <TouchableOpacity 
+        style={[styles.fab, { backgroundColor: colors.primary }]}
+        onPress={() => setModalVisible(true)}
+      >
+        <Ionicons name="add" size={30} color={colors.white} />
+      </TouchableOpacity>
+
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.black }]}>Add Inventory Item</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.neutral[500]} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.formContent}>
+              <Input
+                label="Item Name"
+                placeholder="e.g. Rice, Detergent, Milk"
+                value={itemName}
+                onChangeText={setItemName}
+              />
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1, marginRight: spacing.md }}>
+                  <Input
+                    label="Quantity"
+                    placeholder="0"
+                    keyboardType="numeric"
+                    value={quantity}
+                    onChangeText={setQuantity}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Input
+                    label="Alert Threshold"
+                    placeholder="1"
+                    keyboardType="numeric"
+                    value={threshold}
+                    onChangeText={setThreshold}
+                  />
+                </View>
+              </View>
+
+              <Input
+                label="Total Purchase Cost ($)"
+                placeholder="Optional (Syncs to Spending)"
+                keyboardType="numeric"
+                value={cost}
+                onChangeText={setCost}
+              />
+              <Text style={styles.helperText}>Adding cost will automatically create a spending entry.</Text>
+
+              <Button 
+                title="Add to Inventory" 
+                onPress={handleAddItem} 
+                loading={isSubmitting}
+                style={styles.submitButton}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({ 
-  container: { flex: 1, backgroundColor: theme.colors.neutral[50] }, 
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' }, 
-  header: { 
-    ...theme.typography.presets.h3,
-    color: theme.colors.neutral[800],
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.sm,
-    marginTop: theme.spacing.md,
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1 },
   listContent: {
-    paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.xl,
-  }
+    padding: spacing.md,
+    paddingBottom: 100,
+  },
+  headerTitleContainer: {
+    marginBottom: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontFamily: typography.fontFamily.bold,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.medium,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: spacing.xxl,
+    right: spacing.xl,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: spacing.xl,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: typography.fontFamily.bold,
+  },
+  formContent: {
+    paddingBottom: spacing.xxl,
+  },
+  formRow: {
+    flexDirection: 'row',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  submitButton: {
+    marginTop: spacing.md,
+  },
 });

@@ -2,8 +2,9 @@ import { TextStyle } from 'react-native';
 
 export const typography = {
   fontFamily: {
-    regular: 'System', // Fallback to system font
+    regular: 'System', 
     medium: 'System',
+    semiBold: 'System',
     bold: 'System',
   },
   fontSize: {

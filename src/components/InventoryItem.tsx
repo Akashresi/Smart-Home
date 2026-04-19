@@ -1,37 +1,40 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/theme';
+import { useTheme } from '../context/ThemeContext';
 import { Card } from './ui/Card';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export default function InventoryItem({ item, onDelete }: any) {
+  const { colors } = useTheme();
   const isLow = item.quantity <= item.threshold;
   const stockPercentage = Math.min((item.quantity / (item.threshold * 2)) * 100, 100);
 
   return (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
       <View style={styles.content}>
         <View style={styles.mainInfo}>
-          <Text style={styles.title}>{item.itemName}</Text>
-          <Text style={styles.category}>{item.category || 'General'}</Text>
+          <Text style={[styles.title, { color: colors.black }]}>{item.itemName}</Text>
+          <Text style={[styles.category, { color: colors.neutral[400] }]}>{item.category || 'General'}</Text>
           <View style={styles.stockInfo}>
-            <Text style={[styles.quantity, isLow && { color: theme.colors.error }]}>
+            <Text style={[styles.quantity, { color: isLow ? colors.error : colors.neutral[600] }]}>
               {item.quantity} units left
             </Text>
-            <View style={styles.progressContainer}>
-              <View style={[styles.progressBar, { width: `${stockPercentage}%`, backgroundColor: isLow ? theme.colors.error : theme.colors.success }]} />
+            <View style={[styles.progressContainer, { backgroundColor: colors.neutral[100] }]}>
+              <View style={[styles.progressBar, { width: `${stockPercentage}%`, backgroundColor: isLow ? colors.error : colors.success }]} />
             </View>
           </View>
         </View>
         <View style={styles.rightSide}>
           {isLow && (
-            <View style={styles.lowBadge}>
+            <View style={[styles.lowBadge, { backgroundColor: colors.error }]}>
               <Ionicons name="alert-circle" size={14} color="white" />
               <Text style={styles.lowText}>LOW</Text>
             </View>
           )}
-          <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
-            <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
+          <TouchableOpacity style={[styles.deleteBtn, { backgroundColor: colors.neutral[50] }]} onPress={onDelete}>
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -40,10 +43,10 @@ export default function InventoryItem({ item, onDelete }: any) {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 0, marginBottom: theme.spacing.md },
+  card: { padding: 0, marginBottom: spacing.md },
   content: {
     flexDirection: 'row',
-    padding: theme.spacing.md,
+    padding: spacing.md,
     alignItems: 'center',
   },
   mainInfo: {
@@ -51,12 +54,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    ...theme.typography.presets.h3,
-    color: theme.colors.neutral[800],
+    fontSize: 18,
+    fontFamily: typography.fontFamily.bold,
   },
   category: {
-    ...theme.typography.presets.caption,
-    color: theme.colors.neutral[400],
+    fontSize: 12,
+    fontFamily: typography.fontFamily.medium,
     textTransform: 'capitalize',
   },
   stockInfo: {
@@ -65,12 +68,10 @@ const styles = StyleSheet.create({
   },
   quantity: {
     fontSize: 12,
-    fontWeight: '700',
-    color: theme.colors.neutral[600],
+    fontFamily: typography.fontFamily.bold,
   },
   progressContainer: {
     height: 6,
-    backgroundColor: theme.colors.neutral[100],
     borderRadius: 3,
     width: '80%',
   },
@@ -86,7 +87,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: theme.colors.error,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -94,11 +94,10 @@ const styles = StyleSheet.create({
   lowText: {
     color: 'white',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: typography.fontFamily.bold,
   },
   deleteBtn: {
     padding: 10,
-    backgroundColor: theme.colors.neutral[50],
     borderRadius: 12,
   }
 });

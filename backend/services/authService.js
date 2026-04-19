@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const config = require('../config/config');
 const RefreshToken = require('../models/RefreshToken');
 
 const hashPassword = async (password) => {
@@ -16,7 +17,7 @@ const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, role: user.role },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: config.jwt.accessExpire }
   );
 };
 

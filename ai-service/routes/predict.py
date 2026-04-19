@@ -20,7 +20,7 @@ def route_predict_inventory(data: ItemList):
 
 class DeviceData(BaseModel):
     usage_history: List[float]
-    room_occupancy: bool
+    room_occupancy: bool = True
 
 @router.post("/recommend")
 def get_recommendations(data: DeviceData):

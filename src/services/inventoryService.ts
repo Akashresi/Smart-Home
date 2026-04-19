@@ -1,4 +1,5 @@
 import api from './api';
+
 export default {
   getInventory: () => api.get('/inventory'),
   addInventory: (data: any) => api.post('/inventory', data),

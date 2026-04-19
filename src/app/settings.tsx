@@ -1,29 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Switch, 
+  Alert, 
+  Modal, 
+  Image,
+  TextInput
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/theme';
-import { useAuth } from '@/context/AuthContext';
-import householdService from '@/services/householdService';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import householdService from '../services/householdService';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
+  const { mode, setMode, colors, isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  
-  // States for household creation/joining
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
+  
+  // Household Management states
   const [householdName, setHouseholdName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
 
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     if (user?.householdId) {
       fetchMembers();
+      fetchInviteCode();
     }
   }, [user]);
 
@@ -36,14 +51,21 @@ export default function SettingsScreen() {
     }
   };
 
+  const fetchInviteCode = async () => {
+    try {
+      const res = await householdService.getInviteCode();
+      setInviteCode(res.data.code);
+    } catch (err) {
+      console.error('Failed to fetch invite code', err);
+    }
+  };
+
   const handleCreateHousehold = async () => {
     if (!householdName) return Alert.alert('Error', 'Please enter a household name');
     try {
       setLoading(true);
       await householdService.createHousehold(householdName);
-      Alert.alert('Success', 'Household created!');
-      // Assuming a mechanism to refresh user state or just re-fetch
-      // For now, let's just re-fetch members if possible
+      Alert.alert('Success', 'Household created! Please relogin to sync state.');
     } catch (err) {
       Alert.alert('Error', 'Failed to create household');
     } finally {
@@ -52,218 +74,217 @@ export default function SettingsScreen() {
   };
 
   const handleJoinHousehold = async () => {
-    if (!inviteCode) return Alert.alert('Error', 'Please enter an invite code');
+    if (!joinCode) return Alert.alert('Error', 'Please enter an invite code');
     try {
       setLoading(true);
-      await householdService.joinHousehold(inviteCode);
-      Alert.alert('Success', 'Joined household!');
+      await householdService.joinHousehold(joinCode);
+      Alert.alert('Success', 'Joined household! Please relogin to sync state.');
     } catch (err) {
-      Alert.alert('Error', 'Invalid invite code or failed to join');
+      Alert.alert('Error', 'Invalid code or failed to join');
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveMember = (memberId: string, name: string) => {
+    if (memberId === user?._id) return;
     Alert.alert(
       'Remove Member',
-      `Are you sure you want to remove ${name} from the household?`,
+      `Are you sure you want to remove ${name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await householdService.removeMember(memberId);
-              fetchMembers();
-            } catch (err) {
-              Alert.alert('Error', 'Failed to remove member');
-            }
+        { text: 'Remove', style: 'destructive', onPress: async () => {
+          try {
+            await householdService.removeMember(memberId);
+            fetchMembers();
+          } catch (err) {
+            Alert.alert('Error', 'Failed to remove member');
           }
-        }
+        }}
       ]
     );
   };
 
-  const handleChangeRole = async (memberId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'member' : 'admin';
-    try {
-      await householdService.updateRole(memberId, newRole);
-      fetchMembers();
-    } catch (err) {
-      Alert.alert('Error', 'Failed to update role');
-    }
-  };
-
-  const SettingItem = ({ icon, title, value, onValueChange, type = 'toggle', onPress }: any) => (
+  const SettingRow = ({ icon, title, subtitle, value, type = 'toggle', onPress, options }: any) => (
     <TouchableOpacity 
-      style={styles.settingItem} 
+      style={[styles.settingRow, { borderBottomColor: colors.neutral[100] }]} 
       onPress={onPress}
       disabled={type === 'toggle'}
     >
-      <View style={styles.settingLabel}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.neutral[100] }]}>
-          <Ionicons name={icon} size={20} color={theme.colors.neutral[700]} />
+      <View style={styles.settingIconContainer}>
+        <View style={[styles.iconBox, { backgroundColor: colors.primary + '10' }]}>
+          <Ionicons name={icon} size={20} color={colors.primary} />
         </View>
-        <Text style={styles.settingTitle}>{title}</Text>
       </View>
-      {type === 'toggle' ? (
+      <View style={styles.settingTextContainer}>
+        <Text style={[styles.settingTitle, { color: colors.black }]}>{title}</Text>
+        {subtitle && <Text style={[styles.settingSubtitle, { color: colors.neutral[500] }]}>{subtitle}</Text>}
+      </View>
+      {type === 'toggle' && (
         <Switch 
           value={value} 
-          onValueChange={onValueChange}
-          trackColor={{ false: theme.colors.neutral[200], true: theme.colors.success + '80' }}
-          thumbColor={value ? theme.colors.success : theme.colors.neutral[400]}
+          onValueChange={onPress}
+          trackColor={{ false: colors.neutral[200], true: colors.primary + '80' }}
+          thumbColor={value ? colors.primary : colors.neutral[400]}
         />
-      ) : (
-        <Ionicons name="chevron-forward" size={20} color={theme.colors.neutral[300]} />
+      )}
+      {type === 'link' && (
+        <Ionicons name="chevron-forward" size={20} color={colors.neutral[300]} />
+      )}
+      {type === 'text' && (
+        <Text style={[styles.settingValue, { color: colors.primary }]}>{value}</Text>
       )}
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Card style={styles.profileCard}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {/* Profile Section */}
+      <Card style={[styles.profileCard, { backgroundColor: colors.surface }]}>
         <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.name}</Text>
-            <Text style={styles.profileEmail}>{user?.email}</Text>
-            <View style={[styles.badge, { backgroundColor: isAdmin ? theme.colors.success + '15' : theme.colors.neutral[100] }]}>
-              <Text style={[styles.badgeText, { color: isAdmin ? theme.colors.success : theme.colors.neutral[600] }]}>
+            <Text style={[styles.profileName, { color: colors.black }]}>{user?.name}</Text>
+            <Text style={[styles.profileEmail, { color: colors.neutral[500] }]}>{user?.email}</Text>
+            <View style={[styles.roleBadge, { backgroundColor: isAdmin ? colors.primary + '15' : colors.neutral[100] }]}>
+              <Text style={[styles.roleBadgeText, { color: isAdmin ? colors.primary : colors.neutral[600] }]}>
                 {user?.role?.toUpperCase()}
               </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.editBtn}>
-            <Ionicons name="pencil" size={16} color={theme.colors.success} />
+          <TouchableOpacity style={[styles.editBtn, { backgroundColor: colors.primary + '10' }]}>
+            <Ionicons name="pencil" size={18} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </Card>
 
-      <Text style={styles.sectionTitle}>App Settings</Text>
-      <Card style={styles.settingsGroup}>
-        <SettingItem 
-          icon="notifications-outline" 
-          title="Push Notifications" 
-          value={notifications} 
-          onValueChange={setNotifications}
-        />
-        <SettingItem 
-          icon="moon-outline" 
-          title="Dark Mode" 
-          value={darkMode} 
-          onValueChange={setDarkMode}
-        />
-        <SettingItem 
-          icon="language-outline" 
-          title="Language" 
-          type="link" 
-          onPress={() => {}}
-        />
-        <SettingItem 
-          icon="shield-checkmark-outline" 
-          title="Privacy & Security" 
-          type="link" 
-          onPress={() => {}}
-        />
+      {/* Theme Settings */}
+      <Text style={[styles.sectionTitle, { color: colors.neutral[500] }]}>Appearance</Text>
+      <Card style={[styles.settingsCard, { backgroundColor: colors.surface }]}>
+        <View style={styles.themeSelector}>
+          {[
+            { id: 'light', icon: 'sunny-outline', label: 'Light' },
+            { id: 'dark', icon: 'moon-outline', label: 'Dark' },
+            { id: 'system', icon: 'settings-outline', label: 'System' }
+          ].map(t => (
+            <TouchableOpacity 
+              key={t.id}
+              style={[
+                styles.themeOption, 
+                mode === t.id && { backgroundColor: colors.primary, borderColor: colors.primary }
+              ]}
+              onPress={() => setMode(t.id as any)}
+            >
+              <Ionicons 
+                name={t.icon as any} 
+                size={20} 
+                color={mode === t.id ? 'white' : colors.neutral[500]} 
+              />
+              <Text style={[
+                styles.themeLabel, 
+                { color: mode === t.id ? 'white' : colors.neutral[700] }
+              ]}>{t.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </Card>
 
-      <Text style={styles.sectionTitle}>Household Management</Text>
+      {/* Household Settings */}
+      <Text style={[styles.sectionTitle, { color: colors.neutral[500] }]}>Household</Text>
       {!user?.householdId ? (
-        <Card style={styles.noHouseholdCard}>
-          <Ionicons name="home-outline" size={48} color={theme.colors.neutral[300]} />
-          <Text style={styles.noHouseholdText}>You haven't joined a household yet.</Text>
-          <View style={styles.householdActions}>
-            <TextInput 
-              placeholder="Enter Invite Code" 
-              style={styles.inviteInput} 
-              value={inviteCode}
-              onChangeText={setInviteCode}
-            />
-            <Button title="Join" onPress={handleJoinHousehold} loading={loading} style={styles.joinBtn} />
-          </View>
-          <View style={styles.divider}>
-            <View style={styles.line} /><Text style={styles.orText}>OR</Text><View style={styles.line} />
-          </View>
-          <TextInput 
-            placeholder="New Household Name" 
-            style={styles.inviteInput} 
+        <Card style={[styles.noHouseholdCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.noHouseholdTitle, { color: colors.black }]}>No Household Yet</Text>
+          <Text style={[styles.noHouseholdDesc, { color: colors.neutral[500] }]}>
+            Create a new household to manage your home or join an existing one.
+          </Text>
+          <Input 
+            placeholder="Household Name" 
             value={householdName}
             onChangeText={setHouseholdName}
           />
-          <Button title="Create New Household" variant="outline" onPress={handleCreateHousehold} loading={loading} />
+          <Button title="Create Household" onPress={handleCreateHousehold} loading={loading} />
+          <View style={styles.divider} />
+          <Input 
+            placeholder="Invite Code" 
+            value={joinCode}
+            onChangeText={setJoinCode}
+          />
+          <Button title="Join Household" variant="outline" onPress={handleJoinHousehold} loading={loading} />
         </Card>
       ) : (
-        <Card style={styles.memberCard}>
+        <Card style={[styles.settingsCard, { backgroundColor: colors.surface, padding: 0 }]}>
           <View style={styles.memberHeader}>
-            <Text style={styles.memberCardTitle}>Household Members</Text>
+            <Text style={[styles.memberTitle, { color: colors.black }]}>Members</Text>
             {isAdmin && (
               <TouchableOpacity onPress={() => setShowInviteModal(true)}>
-                <Ionicons name="person-add" size={20} color={theme.colors.success} />
+                <Ionicons name="person-add-outline" size={20} color={colors.primary} />
               </TouchableOpacity>
             )}
           </View>
-          
-          {members.map((member) => (
-            <View key={member._id} style={styles.memberItem}>
-              <View style={styles.memberMain}>
-                <View style={styles.memberAvatar}>
-                  <Text style={styles.memberAvatarText}>{member.name.charAt(0)}</Text>
-                </View>
-                <View>
-                  <Text style={styles.memberName}>{member.name} {member._id === user?.id && <Text style={{color: theme.colors.neutral[400]}}>(You)</Text>}</Text>
-                  <View style={[styles.roleBadge, { backgroundColor: member.role === 'admin' ? theme.colors.success + '15' : theme.colors.neutral[50] }]}>
-                    <Text style={[styles.roleBadgeText, { color: member.role === 'admin' ? theme.colors.success : theme.colors.neutral[500] }]}>
-                      {member.role.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
+          {members.map((member, idx) => (
+            <View key={member._id} style={[styles.memberRow, idx === members.length - 1 && { borderBottomWidth: 0 }, { borderBottomColor: colors.neutral[50] }]}>
+              <View style={[styles.memberAvatarSmall, { backgroundColor: colors.neutral[100] }]}>
+                <Text style={[styles.memberAvatarTextSmall, { color: colors.neutral[600] }]}>
+                  {member.name.charAt(0)}
+                </Text>
               </View>
-              
-              {isAdmin && member._id !== user?.id && (
-                <View style={styles.memberActions}>
-                  <TouchableOpacity 
-                    style={styles.actionBtn} 
-                    onPress={() => handleChangeRole(member._id, member.role)}
-                  >
-                    <Ionicons name="swap-horizontal" size={18} color={theme.colors.neutral[500]} />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.actionBtn} 
-                    onPress={() => handleRemoveMember(member._id, member.name)}
-                  >
-                    <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
-                  </TouchableOpacity>
-                </View>
+              <View style={{ flex: 1, marginLeft: spacing.md }}>
+                <Text style={[styles.memberName, { color: colors.black }]}>
+                  {member.name} {member._id === user?._id && '(You)'}
+                </Text>
+                <Text style={[styles.memberRole, { color: colors.neutral[400] }]}>
+                  {member.role === 'admin' ? 'Household Admin' : 'Member'}
+                </Text>
+              </View>
+              {isAdmin && member._id !== user?._id && (
+                <TouchableOpacity onPress={() => handleRemoveMember(member._id, member.name)}>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                </TouchableOpacity>
               )}
             </View>
           ))}
         </Card>
       )}
 
+      {/* Account Settings */}
+      <Text style={[styles.sectionTitle, { color: colors.neutral[500] }]}>Account</Text>
+      <Card style={[styles.settingsCard, { backgroundColor: colors.surface, padding: 0 }]}>
+        <SettingRow icon="person-outline" title="Profile Settings" type="link" onPress={() => {}} />
+        <SettingRow icon="notifications-outline" title="Notifications" type="toggle" value={true} onPress={() => {}} />
+        <SettingRow icon="lock-closed-outline" title="Security" type="link" onPress={() => {}} />
+      </Card>
+
       <Button 
         title="Logout" 
         variant="ghost" 
         onPress={logout} 
         style={styles.logoutBtn}
-        textStyle={{ color: theme.colors.error }}
+        textStyle={{ color: colors.error }}
       />
-      <View style={{ height: 40 }} />
 
-      {/* Invite Modal Placeholder */}
-      <Modal visible={showInviteModal} transparent animationType="slide">
+      <View style={styles.footer}>
+        <Text style={[styles.footerText, { color: colors.neutral[400] }]}>Smart Home Management v2.0</Text>
+      </View>
+
+      {/* Invite Modal */}
+      <Modal visible={showInviteModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Invite Member</Text>
-            <Text style={styles.inviteCodeText}>Invite Code: <Text style={{fontWeight: 'bold'}}>ABC123</Text></Text>
-            <Text style={styles.modalHint}>Share this code with your family members to join this household.</Text>
-            <Button title="Close" onPress={() => setShowInviteModal(false)} />
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.black }]}>Invite Family Member</Text>
+            <Text style={[styles.modalDesc, { color: colors.neutral[500] }]}>
+              Share this code with your family members so they can join your household.
+            </Text>
+            <View style={[styles.inviteCodeContainer, { backgroundColor: colors.primary + '10' }]}>
+              <Text style={[styles.inviteCode, { color: colors.primary }]}>{inviteCode || 'LOADING...'}</Text>
+            </View>
+            <Button title="Close" onPress={() => setShowInviteModal(false)} style={{ width: '100%' }} />
           </View>
         </View>
       </Modal>
+
+      <View style={{ height: 100 }} />
     </ScrollView>
   );
 }
@@ -271,237 +292,230 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.neutral[50],
   },
   content: {
-    padding: theme.spacing.lg,
-  },
-  sectionTitle: {
-    ...theme.typography.presets.caption,
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.neutral[500],
-    marginBottom: theme.spacing.sm,
-    marginTop: theme.spacing.xl,
-    marginLeft: theme.spacing.xs,
-    textTransform: 'uppercase',
+    padding: spacing.lg,
   },
   profileCard: {
-    padding: theme.spacing.lg,
-    borderRadius: 20,
-    ...theme.shadows.sm,
+    borderRadius: 24,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: theme.colors.success,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontFamily: typography.fontFamily.bold,
     color: 'white',
   },
   profileInfo: {
     flex: 1,
-    gap: 4,
+    marginLeft: spacing.lg,
   },
   profileName: {
-    ...theme.typography.presets.h2,
-    color: theme.colors.neutral[900],
+    fontSize: 20,
+    fontFamily: typography.fontFamily.bold,
   },
   profileEmail: {
-    ...theme.typography.presets.caption,
-    color: theme.colors.neutral[500],
+    fontSize: 13,
+    fontFamily: typography.fontFamily.medium,
+    marginTop: 2,
   },
-  badge: {
+  roleBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginTop: 4,
+    marginTop: 6,
   },
-  badgeText: {
+  roleBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: typography.fontFamily.bold,
   },
   editBtn: {
-    padding: 8,
-    backgroundColor: theme.colors.success + '10',
-    borderRadius: 8,
-  },
-  settingsGroup: {
-    padding: 0,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.neutral[50],
-  },
-  settingLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  iconContainer: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sectionTitle: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+    marginTop: spacing.md,
+  },
+  settingsCard: {
+    borderRadius: 20,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+  },
+  settingIconContainer: {
+    marginRight: spacing.md,
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingTextContainer: {
+    flex: 1,
+  },
   settingTitle: {
-    ...theme.typography.presets.body,
-    fontWeight: '500',
-    color: theme.colors.neutral[800],
+    fontSize: 15,
+    fontFamily: typography.fontFamily.semiBold,
+  },
+  settingSubtitle: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.medium,
+  },
+  settingValue: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.bold,
+  },
+  themeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    gap: 8,
+  },
+  themeLabel: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.semiBold,
   },
   noHouseholdCard: {
-    padding: theme.spacing.xl,
+    padding: spacing.xl,
+    borderRadius: 20,
     alignItems: 'center',
-    gap: theme.spacing.md,
   },
-  noHouseholdText: {
-    ...theme.typography.presets.body,
-    color: theme.colors.neutral[500],
+  noHouseholdTitle: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.bold,
+    marginBottom: 4,
+  },
+  noHouseholdDesc: {
+    fontSize: 14,
     textAlign: 'center',
-  },
-  householdActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    width: '100%',
-  },
-  inviteInput: {
-    flex: 1,
-    height: 48,
-    borderWidth: 1,
-    borderColor: theme.colors.neutral[200],
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    backgroundColor: theme.colors.neutral[50],
-  },
-  joinBtn: {
-    height: 48,
-    paddingHorizontal: 20,
+    marginBottom: spacing.xl,
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  line: {
-    flex: 1,
     height: 1,
-    backgroundColor: theme.colors.neutral[200],
-  },
-  orText: {
-    marginHorizontal: 10,
-    color: theme.colors.neutral[400],
-    fontSize: 12,
-  },
-  memberCard: {
-    padding: theme.spacing.md,
+    width: '100%',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginVertical: spacing.xl,
   },
   memberHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
-    paddingHorizontal: 4,
-  },
-  memberCardTitle: {
-    ...theme.typography.presets.body,
-    fontWeight: 'bold',
-    color: theme.colors.neutral[700],
-  },
-  memberItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: theme.spacing.md,
+    padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.neutral[100],
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  memberMain: {
+  memberTitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.bold,
+  },
+  memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
+    padding: spacing.md,
+    borderBottomWidth: 1,
   },
-  memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.neutral[100],
+  memberAvatarSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  memberAvatarText: {
-    fontWeight: 'bold',
-    color: theme.colors.neutral[600],
+  memberAvatarTextSmall: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.bold,
   },
   memberName: {
-    ...theme.typography.presets.body,
-    fontWeight: '600',
-    color: theme.colors.neutral[800],
+    fontSize: 15,
+    fontFamily: typography.fontFamily.semiBold,
   },
-  roleBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    marginTop: 2,
-    alignSelf: 'flex-start',
-  },
-  roleBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  memberActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionBtn: {
-    padding: 8,
-    backgroundColor: theme.colors.neutral[50],
-    borderRadius: 8,
+  memberRole: {
+    fontSize: 12,
+    marginTop: 1,
   },
   logoutBtn: {
-    marginTop: theme.spacing.xl,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: spacing.xl,
+  },
+  footerText: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.medium,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-    padding: 20,
+    alignItems: 'center',
+    padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    gap: 16,
+    width: '100%',
+    borderRadius: 24,
+    padding: spacing.xl,
     alignItems: 'center',
   },
   modalTitle: {
-    ...theme.typography.presets.h2,
-    color: theme.colors.neutral[900],
-  },
-  inviteCodeText: {
     fontSize: 20,
-    color: theme.colors.success,
+    fontFamily: typography.fontFamily.bold,
+    marginBottom: spacing.sm,
   },
-  modalHint: {
-    ...theme.typography.presets.caption,
+  modalDesc: {
+    fontSize: 14,
     textAlign: 'center',
-    color: theme.colors.neutral[500],
-  }
+    marginBottom: spacing.xl,
+  },
+  inviteCodeContainer: {
+    width: '100%',
+    padding: spacing.xl,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  inviteCode: {
+    fontSize: 32,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 4,
+  },
 });
