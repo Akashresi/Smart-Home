@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: spacing.xxl,
+    bottom: spacing['2xl'],
     right: spacing.xl,
     width: 60,
     height: 60,

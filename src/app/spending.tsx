@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing.xl,
-    paddingTop: spacing.xxl + 20,
+    paddingTop: spacing['2xl'] + 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     alignItems: 'center',
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: spacing.xxl,
+    bottom: spacing['2xl'],
     right: spacing.xl,
     width: 60,
     height: 60,
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   formContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing['2xl'],
   },
   label: {
     fontSize: 14,

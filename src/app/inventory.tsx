@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: spacing.xxl,
+    bottom: spacing['2xl'],
     right: spacing.xl,
     width: 60,
     height: 60,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   formContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing['2xl'],
   },
   formRow: {
     flexDirection: 'row',

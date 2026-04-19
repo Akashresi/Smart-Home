@@ -87,7 +87,7 @@ export default function SettingsScreen() {
   };
 
   const handleRemoveMember = (memberId: string, name: string) => {
-    if (memberId === user?._id) return;
+    if (memberId === user?.id) return;
     Alert.alert(
       'Remove Member',
       `Are you sure you want to remove ${name}?`,
@@ -232,13 +232,13 @@ export default function SettingsScreen() {
               </View>
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <Text style={[styles.memberName, { color: colors.black }]}>
-                  {member.name} {member._id === user?._id && '(You)'}
+                  {member.name} {member._id === user?.id && '(You)'}
                 </Text>
                 <Text style={[styles.memberRole, { color: colors.neutral[400] }]}>
                   {member.role === 'admin' ? 'Household Admin' : 'Member'}
                 </Text>
               </View>
-              {isAdmin && member._id !== user?._id && (
+              {isAdmin && member._id !== user?.id && (
                 <TouchableOpacity onPress={() => handleRemoveMember(member._id, member.name)}>
                   <Ionicons name="trash-outline" size={18} color={colors.error} />
                 </TouchableOpacity>
