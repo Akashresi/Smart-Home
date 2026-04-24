@@ -208,11 +208,11 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 14,
-    fontFamily: typography.medium,
+    fontFamily: typography.fontFamily.medium,
   },
   userName: {
     fontSize: 28,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   profileBtn: {
     width: 48,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   aiTitle: {
     color: 'white',
     fontSize: 18,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   savingsBadge: {
     paddingHorizontal: 10,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   savingsText: {
     fontSize: 12,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   suggestionList: {
     gap: 10,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 14,
-    fontFamily: typography.medium,
+    fontFamily: typography.fontFamily.medium,
   },
   noAiText: {
     color: 'rgba(255,255,255,0.6)',
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
     marginBottom: spacing.md,
     marginTop: spacing.sm,
   },
@@ -317,10 +317,10 @@ const styles = StyleSheet.create({
   },
   mTitle: {
     fontSize: 16,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   mStatus: {
     fontSize: 13,
-    fontFamily: typography.medium,
+    fontFamily: typography.fontFamily.medium,
   },
 });

@@ -5,13 +5,17 @@ import { useTheme } from '../../context/ThemeContext';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
+import { Button } from './Button';
+
 interface EmptyStateProps {
   icon: keyof typeof Ionicons.prototype.props.name;
   title: string;
   message: string;
+  onPress?: () => void;
+  actionTitle?: string;
 }
 
-export default function EmptyState({ icon, title, message }: EmptyStateProps) {
+export default function EmptyState({ icon, title, message, onPress, actionTitle }: EmptyStateProps) {
   const { colors } = useTheme();
 
   return (
@@ -21,6 +25,13 @@ export default function EmptyState({ icon, title, message }: EmptyStateProps) {
       </View>
       <Text style={[styles.title, { color: colors.black }]}>{title}</Text>
       <Text style={[styles.message, { color: colors.neutral[500] }]}>{message}</Text>
+      {onPress && actionTitle && (
+        <Button 
+          title={actionTitle} 
+          onPress={onPress} 
+          style={styles.actionButton} 
+        />
+      )}
     </View>
   );
 }
@@ -30,8 +41,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xxl,
-    marginTop: spacing.xxl,
+    padding: spacing['2xl'],
+    marginTop: spacing['2xl'],
   },
   iconCircle: {
     width: 120,
@@ -48,14 +59,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
     textAlign: 'center',
   },
   message: {
     fontSize: 15,
-    fontFamily: typography.medium,
+    fontFamily: typography.fontFamily.medium,
     textAlign: 'center',
     marginTop: spacing.sm,
     lineHeight: 22,
+  },
+  actionButton: {
+    marginTop: spacing.xl,
+    minWidth: 200,
   },
 });

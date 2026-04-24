@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   },
   title: { 
     fontSize: 16,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   completedText: {
     textDecorationLine: 'line-through',
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    fontFamily: typography.medium,
+    fontFamily: typography.fontFamily.medium,
   },
   overdueText: {
     fontWeight: '700',
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   actions: { 
     flexDirection: 'row',

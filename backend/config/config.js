@@ -25,8 +25,8 @@ module.exports = {
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
-    accessExpire: '2h',
-    refreshExpire: '7d',
+    accessExpire: process.env.JWT_ACCESS_EXPIRE || '24h',
+    refreshExpire: process.env.JWT_REFRESH_EXPIRE || '7d',
   },
   security: {
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12,

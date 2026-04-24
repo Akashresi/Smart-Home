@@ -10,8 +10,11 @@ import {
   RefreshControl,
   Alert
 } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import inventoryService from '../services/inventoryService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -23,6 +26,7 @@ import { typography } from '../theme/typography';
 
 export default function InventoryScreen() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,17 +130,37 @@ export default function InventoryScreen() {
           </View>
         }
         ListEmptyComponent={
-          <EmptyState 
-            icon="basket-outline" 
-            title="Empty pantry" 
-            message="No items found. Tap the + button to add your first inventory item! 🍎" 
-          />
+          !user?.householdId ? (
+            <EmptyState 
+              icon="home-outline" 
+              title="No Household" 
+              message="Join or create a household in Settings to start managing inventory." 
+              onPress={() => router.push('/settings')}
+              actionTitle="Go to Settings"
+            />
+          ) : (
+            <EmptyState 
+              icon="basket-outline" 
+              title="Empty pantry" 
+              message="No items found. Tap the + button to add your first inventory item! 🍎" 
+            />
+          )
         } 
       />
 
       <TouchableOpacity 
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => setModalVisible(true)}
+        style={[
+          styles.fab, 
+          { backgroundColor: colors.primary },
+          !user?.householdId && { backgroundColor: colors.neutral[300], opacity: 0.5 }
+        ]}
+        onPress={() => {
+          if (!user?.householdId) {
+            Alert.alert('Household Required', 'Please join or create a household in Settings first.');
+          } else {
+            setModalVisible(true);
+          }
+        }}
       >
         <Ionicons name="add" size={30} color={colors.white} />
       </TouchableOpacity>

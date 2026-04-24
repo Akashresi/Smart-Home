@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { router } from 'expo-router';
 import expenseService, { ExpenseData } from '../services/expenseService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -25,6 +27,7 @@ const CATEGORIES = ['Inventory', 'Maintenance', 'Other'];
 
 export default function SpendingScreen() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const [expenses, setExpenses] = useState<ExpenseData[]>([]);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -189,17 +192,37 @@ export default function SpendingScreen() {
           }} />
         }
         ListEmptyComponent={
-          <EmptyState 
-            title="No expenses yet" 
-            message="Your spending will appear here once you add an expense or restock inventory."
-            icon="wallet-outline"
-          />
+          !user?.householdId ? (
+            <EmptyState 
+              icon="home-outline" 
+              title="No Household" 
+              message="Join or create a household in Settings to track your spending and budget." 
+              onPress={() => router.push('/settings')}
+              actionTitle="Go to Settings"
+            />
+          ) : (
+            <EmptyState 
+              title="No expenses yet" 
+              message="Your spending will appear here once you add an expense or restock inventory."
+              icon="wallet-outline"
+            />
+          )
         }
       />
 
       <TouchableOpacity 
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => setModalVisible(true)}
+        style={[
+          styles.fab, 
+          { backgroundColor: colors.primary },
+          !user?.householdId && { backgroundColor: colors.neutral[300], opacity: 0.5 }
+        ]}
+        onPress={() => {
+          if (!user?.householdId) {
+            Alert.alert('Household Required', 'Please join or create a household in Settings first.');
+          } else {
+            setModalVisible(true);
+          }
+        }}
       >
         <Ionicons name="add" size={30} color={colors.white} />
       </TouchableOpacity>

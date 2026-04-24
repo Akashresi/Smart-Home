@@ -64,4 +64,11 @@ const authorize = (...roles) => {
 
 const isAdmin = authorize('admin');
 
-module.exports = { protect, authorize, isAdmin };
+const hasHousehold = (req, res, next) => {
+  if (!req.user || !req.user.householdId) {
+    return res.status(403).json({ message: 'Forbidden: You must belong to a household to access this resource' });
+  }
+  next();
+};
+
+module.exports = { protect, authorize, isAdmin, hasHousehold };

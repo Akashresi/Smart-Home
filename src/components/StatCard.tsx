@@ -55,16 +55,16 @@ const styles = StyleSheet.create({
   },
   title: { 
     fontSize: 11, 
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   count: { 
     fontSize: 22, 
-    fontFamily: typography.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   subtitle: {
     fontSize: 10,
-    fontFamily: typography.medium,
+    fontFamily: typography.fontFamily.medium,
   }
 });
