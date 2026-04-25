@@ -3,31 +3,83 @@ const User = require('../models/User');
 
 const createHousehold = async (req, res) => {
   try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Household name is required' });
+    }
+
+    // Check if user already has a household
+    const user = await User.findById(req.user._id);
+    if (user.householdId) {
+      return res.status(400).json({ message: 'User already belongs to a household' });
+    }
+
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
     const household = await Household.create({
-      name: req.body.name,
+      name,
       adminId: req.user._id,
       memberIds: [req.user._id],
       inviteCode
     });
-    // Set the creator's role to 'admin'
-    await User.findByIdAndUpdate(req.user._id, { householdId: household._id, role: 'admin' });
+
+    // Set the creator's role to 'admin' and update householdId
+    await User.findByIdAndUpdate(req.user._id, { 
+      householdId: household._id, 
+      role: 'admin' 
+    });
+
     res.status(201).json(household);
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) { 
+    console.error('Create Household Error:', err);
+    res.status(500).json({ message: err.message || 'Server error' }); 
+  }
 };
 
 const joinHousehold = async (req, res) => {
   try {
-    const household = await Household.findOne({ inviteCode: req.body.inviteCode });
-    if (!household) return res.status(404).json({ message: 'Invalid code' });
+    const { inviteCode } = req.body;
+    if (!inviteCode) {
+      return res.status(400).json({ message: 'Invite code is required' });
+    }
+
+    const household = await Household.findOne({ inviteCode: inviteCode.toUpperCase() });
+    if (!household) return res.status(404).json({ message: 'Invalid invite code' });
     
+    // Check if user already in household
+    const user = await User.findById(req.user._id);
+    if (user.householdId && user.householdId.toString() !== household._id.toString()) {
+       return res.status(400).json({ message: 'User already belongs to another household' });
+    }
+
     if (!household.memberIds.includes(req.user._id)) {
       household.memberIds.push(req.user._id);
       await household.save();
     }
+
     await User.findByIdAndUpdate(req.user._id, { householdId: household._id });
     res.json(household);
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) { 
+    console.error('Join Household Error:', err);
+    res.status(500).json({ message: 'Server error' }); 
+  }
+};
+
+const getInviteCode = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user.householdId) {
+      return res.status(400).json({ message: 'User does not belong to a household' });
+    }
+    const household = await Household.findById(user.householdId);
+    if (!household) {
+      return res.status(404).json({ message: 'Household not found' });
+    }
+    res.json({ code: household.inviteCode });
+  } catch (err) {
+    console.error('Get Invite Code Error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 const getMembers = async (req, res) => {
@@ -64,4 +116,11 @@ const updateMemberRole = async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
 };
 
-module.exports = { createHousehold, joinHousehold, getMembers, removeMember, updateMemberRole };
+module.exports = { 
+  createHousehold, 
+  joinHousehold, 
+  getInviteCode,
+  getMembers, 
+  removeMember, 
+  updateMemberRole 
+};

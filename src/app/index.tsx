@@ -9,6 +9,8 @@ import {
   Dimensions 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import taskService from '../services/taskService';
@@ -41,6 +43,12 @@ export default function HomeScreen() {
   const [predictedSavings, setPredictedSavings] = useState(0);
 
   const fetchData = async () => {
+    if (!user?.householdId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const [tRes, iRes, eRes, aRes, mRes] = await Promise.all([
         taskService.getTasks(), 
@@ -93,34 +101,35 @@ export default function HomeScreen() {
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]} 
       contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh} 
-          tintColor={colors.primary} 
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
       <View style={styles.header}>
         <View>
-          <Text style={[styles.greeting, { color: colors.neutral[500] }]}>Welcome Back,</Text>
-          <Text style={[styles.userName, { color: colors.black }]}>{user?.name || 'User'}</Text>
+          <Text style={[styles.greeting, { color: colors.neutral[500] }]}>Welcome back,</Text>
+          <Text style={[styles.userName, { color: colors.black }]}>{user?.name || 'Homeowner'}</Text>
         </View>
         <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.surface }]}>
           <Ionicons name="person-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <Card style={[styles.aiCard, { backgroundColor: isDark ? colors.surface : colors.neutral[900] }]}>
+      {/* Premium AI Insights Card */}
+      <Card style={[styles.aiCard, { backgroundColor: isDark ? colors.surface : '#1A1C1E' }]} variant="elevated">
         <View style={styles.aiHeader}>
           <View style={styles.aiTitleWrapper}>
-            <View style={[styles.aiIconWrapper, { backgroundColor: colors.primary }]}>
-              <Ionicons name="sparkles" size={18} color="white" />
-            </View>
+            <LinearGradient
+              colors={colors.gradients.primary as any}
+              style={styles.aiIconWrapper}
+            >
+              <Ionicons name="sparkles" size={16} color="white" />
+            </LinearGradient>
             <Text style={styles.aiTitle}>Smart Insights</Text>
           </View>
-          <View style={[styles.savingsBadge, { backgroundColor: colors.primary + '30' }]}>
-            <Text style={[styles.savingsText, { color: colors.primary }]}>+${predictedSavings} saved</Text>
+          <View style={[styles.savingsBadge, { backgroundColor: 'rgba(79, 172, 254, 0.1)' }]}>
+            <Text style={[styles.savingsText, { color: colors.primary }]}>+${predictedSavings} predicted</Text>
           </View>
         </View>
         
@@ -128,7 +137,7 @@ export default function HomeScreen() {
           <View style={styles.suggestionList}>
             {aiSuggestions.slice(0, 2).map((s, i) => (
               <View key={i} style={styles.suggestionItem}>
-                <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                <View style={[styles.suggestionDot, { backgroundColor: colors.primary }]} />
                 <Text style={styles.suggestionText}>{s}</Text>
               </View>
             ))}
@@ -138,56 +147,79 @@ export default function HomeScreen() {
         )}
       </Card>
 
+      {/* Statistics Grid */}
       <View style={styles.statsGrid}>
         <View style={styles.row}>
           <StatCard 
-            title="Active Tasks" 
+            title="Tasks Pending" 
             count={stats.tasks} 
-            icon="checkbox" 
-            color={colors.primary} 
+            icon="checkbox-outline" 
+            gradient={colors.gradients.secondary} 
+            subtitle="Today"
           />
           <StatCard 
-            title="Items Stock" 
+            title="Pantry Items" 
             count={stats.inventory} 
-            icon="cube" 
-            color={colors.success} 
+            icon="basket-outline" 
+            gradient={colors.gradients.success} 
+            subtitle="In Stock"
           />
         </View>
         <View style={styles.row}>
           <StatCard 
-            title="Spending" 
+            title="Monthly Spending" 
             count={`$${Math.round(stats.monthlySpending)}`} 
-            icon="wallet" 
-            color={colors.warning} 
-            subtitle="This month"
+            icon="wallet-outline" 
+            gradient={colors.gradients.warning} 
+            subtitle="Budgeted"
           />
           <StatCard 
             title="System Alerts" 
             count={stats.alerts} 
-            icon="notifications" 
-            color={colors.error} 
+            icon="notifications-outline" 
+            gradient={colors.gradients.danger} 
+            subtitle="Urgent"
           />
         </View>
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.black }]}>Home Maintenance</Text>
-      <View style={styles.maintenanceRow}>
-        <Card style={[styles.maintenanceCard, { backgroundColor: colors.surface }]}>
-          <View style={[styles.mIconWrapper, { backgroundColor: colors.info + '15' }]}>
+      {/* Quick Actions Section */}
+      <Text style={[styles.sectionTitle, { color: colors.black }]}>Quick Actions</Text>
+      <View style={styles.quickActions}>
+        {[
+          { label: 'Add Task', icon: 'add-circle', color: colors.primary },
+          { label: 'Inventory', icon: 'barcode', color: colors.success },
+          { label: 'Settings', icon: 'settings', color: colors.neutral[600] }
+        ].map((action, i) => (
+          <TouchableOpacity key={i} style={[styles.actionBtn, { backgroundColor: colors.surface }]}>
+            <View style={[styles.actionIconWrapper, { backgroundColor: action.color + '15' }]}>
+              <Ionicons name={action.icon as any} size={24} color={action.color} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.neutral[700] }]}>{action.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={[styles.sectionTitle, { color: colors.black, marginTop: spacing.lg }]}>Home Maintenance</Text>
+      <TouchableOpacity 
+        style={styles.maintenanceRow} 
+        onPress={() => router.push('/maintenance')}
+      >
+        <Card style={[styles.maintenanceCard, { backgroundColor: colors.surface }]} variant="elevated">
+          <View style={[styles.mIconWrapper, { backgroundColor: colors.info + '10' }]}>
             <Ionicons name="construct" size={24} color={colors.info} />
           </View>
           <View style={styles.mInfo}>
-            <Text style={[styles.mTitle, { color: colors.black }]}>Maintenance</Text>
+            <Text style={[styles.mTitle, { color: colors.black }]}>Maintenance Tasks</Text>
             <Text style={[styles.mStatus, { color: colors.neutral[500] }]}>
-              {stats.maintenance > 0 ? `${stats.maintenance} pending tasks` : 'All clear'}
+              {stats.maintenance > 0 ? `${stats.maintenance} tasks require attention` : 'Systems running normally'}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.neutral[300]} />
         </Card>
-      </View>
+      </TouchableOpacity>
 
-      {/* Decorative Spacer for Tab Bar */}
-      <View style={{ height: 100 }} />
+      <View style={{ height: 120 }} />
     </ScrollView>
   );
 }
@@ -264,17 +296,23 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   suggestionList: {
-    gap: 10,
+    gap: 12,
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+  },
+  suggestionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   suggestionText: {
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 14,
     fontFamily: typography.fontFamily.medium,
+    flex: 1,
   },
   noAiText: {
     color: 'rgba(255,255,255,0.6)',
@@ -288,6 +326,34 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 12,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: spacing.md,
+  },
+  actionBtn: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 20,
+    alignItems: 'center',
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  actionIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionLabel: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.bold,
   },
   sectionTitle: {
     fontSize: 20,

@@ -9,32 +9,43 @@ import { typography } from '../theme/typography';
 export default function InventoryItem({ item, onDelete }: any) {
   const { colors } = useTheme();
   const isLow = item.quantity <= item.threshold;
+  const isCritical = item.quantity === 0;
   const stockPercentage = Math.min((item.quantity / (item.threshold * 2)) * 100, 100);
 
   return (
-    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+    <Card style={[styles.card, { backgroundColor: colors.surface }]} variant="elevated">
       <View style={styles.content}>
         <View style={styles.mainInfo}>
-          <Text style={[styles.title, { color: colors.black }]}>{item.itemName}</Text>
-          <Text style={[styles.category, { color: colors.neutral[400] }]}>{item.category || 'General'}</Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: colors.black }]}>{item.itemName}</Text>
+            <View style={[styles.categoryBadge, { backgroundColor: colors.neutral[50] }]}>
+              <Text style={[styles.categoryText, { color: colors.neutral[500] }]}>{item.category || 'General'}</Text>
+            </View>
+          </View>
+          
           <View style={styles.stockInfo}>
-            <Text style={[styles.quantity, { color: isLow ? colors.error : colors.neutral[600] }]}>
-              {item.quantity} units left
-            </Text>
-            <View style={[styles.progressContainer, { backgroundColor: colors.neutral[100] }]}>
-              <View style={[styles.progressBar, { width: `${stockPercentage}%`, backgroundColor: isLow ? colors.error : colors.success }]} />
+            <View style={styles.stockLabels}>
+              <Text style={[styles.quantity, { color: isCritical ? colors.error : isLow ? colors.warning : colors.neutral[600] }]}>
+                {item.quantity} units left
+              </Text>
+              <Text style={[styles.threshold, { color: colors.neutral[400] }]}>
+                Threshold: {item.threshold}
+              </Text>
+            </View>
+            <View style={[styles.progressContainer, { backgroundColor: colors.neutral[50] }]}>
+              <View style={[
+                styles.progressBar, 
+                { 
+                  width: `${stockPercentage}%`, 
+                  backgroundColor: isCritical ? colors.error : isLow ? colors.warning : colors.success 
+                }
+              ]} />
             </View>
           </View>
         </View>
         <View style={styles.rightSide}>
-          {isLow && (
-            <View style={[styles.lowBadge, { backgroundColor: colors.error }]}>
-              <Ionicons name="alert-circle" size={14} color="white" />
-              <Text style={styles.lowText}>LOW</Text>
-            </View>
-          )}
-          <TouchableOpacity style={[styles.deleteBtn, { backgroundColor: colors.neutral[50] }]} onPress={onDelete}>
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
+          <TouchableOpacity style={[styles.deleteBtn, { backgroundColor: colors.error + '10' }]} onPress={onDelete}>
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -51,53 +62,60 @@ const styles = StyleSheet.create({
   },
   mainInfo: {
     flex: 1,
-    gap: 4,
+    gap: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: typography.fontFamily.bold,
   },
-  category: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.medium,
-    textTransform: 'capitalize',
+  categoryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontFamily: typography.fontFamily.bold,
+    textTransform: 'uppercase',
   },
   stockInfo: {
-    marginTop: 8,
     gap: 6,
   },
+  stockLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
   quantity: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: typography.fontFamily.bold,
+  },
+  threshold: {
+    fontSize: 10,
+    fontFamily: typography.fontFamily.medium,
   },
   progressContainer: {
     height: 6,
     borderRadius: 3,
-    width: '80%',
+    width: '100%',
   },
   progressBar: {
     height: '100%',
     borderRadius: 3,
   },
   rightSide: {
-    alignItems: 'flex-end',
-    gap: 12,
-  },
-  lowBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  lowText: {
-    color: 'white',
-    fontSize: 10,
-    fontFamily: typography.fontFamily.bold,
+    paddingLeft: spacing.md,
   },
   deleteBtn: {
-    padding: 10,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });

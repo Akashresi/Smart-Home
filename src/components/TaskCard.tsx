@@ -11,38 +11,40 @@ export default function TaskCard({ item, onComplete, onDelete }: any) {
   const isCompleted = item.status === 'completed';
 
   return (
-    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+    <Card style={[styles.card, { backgroundColor: colors.surface }]} variant="elevated">
       <View style={styles.content}>
-        <View style={[styles.priorityTab, { backgroundColor: item.priority === 'High' ? colors.error : colors.primary }]} />
+        <View style={[styles.priorityTab, { backgroundColor: item.priority === 'high' ? colors.error : item.priority === 'medium' ? colors.warning : colors.primary }]} />
         <View style={styles.info}>
           <Text style={[styles.title, { color: colors.black }, isCompleted && styles.completedText]}>{item.title}</Text>
-          <Text style={[styles.desc, { color: colors.neutral[500] }]} numberOfLines={2}>{item.description}</Text>
+          {item.description && (
+            <Text style={[styles.desc, { color: colors.neutral[500] }]} numberOfLines={2}>{item.description}</Text>
+          )}
           <View style={styles.footer}>
-            <View style={[styles.badge, { backgroundColor: colors.neutral[100] }]}>
-              <Ionicons name="flag-outline" size={12} color={colors.neutral[500]} />
+            <View style={[styles.badge, { backgroundColor: colors.neutral[50] }]}>
+              <Ionicons name="flag" size={10} color={item.priority === 'high' ? colors.error : colors.neutral[400]} />
               <Text style={[styles.badgeText, { color: colors.neutral[600] }]}>{item.priority}</Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: isCompleted ? colors.success + '15' : colors.neutral[100] }]}>
+            <View style={[styles.badge, { backgroundColor: isCompleted ? colors.success + '10' : colors.warning + '10' }]}>
               <Ionicons 
-                name={isCompleted ? "checkmark-circle" : "time-outline"} 
-                size={12} 
-                color={isCompleted ? colors.success : colors.neutral[500]} 
+                name={isCompleted ? "checkmark-circle" : "time"} 
+                size={10} 
+                color={isCompleted ? colors.success : colors.warning} 
               />
               <Text style={[
                 styles.badgeText, 
-                { color: isCompleted ? colors.success : colors.neutral[600] }
+                { color: isCompleted ? colors.success : colors.warning }
               ]}>{item.status}</Text>
             </View>
           </View>
         </View>
         <View style={styles.actions}>
           {!isCompleted && (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.neutral[50] }]} onPress={onComplete}>
-              <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.success + '10' }]} onPress={onComplete}>
+              <Ionicons name="checkmark" size={20} color={colors.success} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.neutral[50] }]} onPress={onDelete}>
-            <Ionicons name="trash-outline" size={24} color={colors.error} />
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.error + '10' }]} onPress={onDelete}>
+            <Ionicons name="trash" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>

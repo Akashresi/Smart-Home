@@ -22,7 +22,7 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
 export default function SettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { mode, setMode, colors, isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
@@ -64,10 +64,12 @@ export default function SettingsScreen() {
     if (!householdName) return Alert.alert('Error', 'Please enter a household name');
     try {
       setLoading(true);
-      await householdService.createHousehold(householdName);
-      Alert.alert('Success', 'Household created! Please relogin to sync state.');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to create household');
+      const res = await householdService.createHousehold(householdName);
+      await updateUser({ householdId: res.data._id, role: 'admin' });
+      Alert.alert('Success', 'Household created!');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to create household';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }
@@ -77,10 +79,12 @@ export default function SettingsScreen() {
     if (!joinCode) return Alert.alert('Error', 'Please enter an invite code');
     try {
       setLoading(true);
-      await householdService.joinHousehold(joinCode);
-      Alert.alert('Success', 'Joined household! Please relogin to sync state.');
-    } catch (err) {
-      Alert.alert('Error', 'Invalid code or failed to join');
+      const res = await householdService.joinHousehold(joinCode);
+      await updateUser({ householdId: res.data._id });
+      Alert.alert('Success', 'Joined household!');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Invalid code or failed to join';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }

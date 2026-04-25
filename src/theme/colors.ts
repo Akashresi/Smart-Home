@@ -41,8 +41,13 @@ export const colors = {
   },
   
   gradients: {
-    primary: ['#208AEF', '#1565C0'],
-    success: ['#00C853', '#009624'],
-    danger: ['#FF1744', '#D50000'],
+    primary: ['#4FACFE', '#00F2FE'],   // Bright Blue
+    secondary: ['#667EEA', '#764BA2'], // Indigo/Purple
+    success: ['#00B09B', '#96C93D'],   // Teal/Green
+    warning: ['#F6D365', '#FDA085'],   // Orange/Gold
+    danger: ['#FF0844', '#FFB199'],    // Soft Red
+    info: ['#84FAB0', '#8FD3F4'],      // Mint/Sky
+    dark: ['#232526', '#414345'],      // Deep Charcoal
+    royal: ['#1E3C72', '#2A5298'],     // Royal Blue
   }
 };
