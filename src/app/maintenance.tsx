@@ -8,13 +8,18 @@ import {
   Modal, 
   ScrollView,
   RefreshControl,
-  Alert
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  DeviceEventEmitter
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import maintenanceService from '../services/maintenanceService';
+import aiService from '../services/aiService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
@@ -61,6 +66,15 @@ export default function MaintenanceScreen() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    if (modalVisible || completeModalVisible) {
+      DeviceEventEmitter.emit('hideTabBar');
+    } else {
+      DeviceEventEmitter.emit('showTabBar');
+    }
+    return () => { DeviceEventEmitter.emit('showTabBar'); };
+  }, [modalVisible, completeModalVisible]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -131,6 +145,38 @@ export default function MaintenanceScreen() {
     setDueDate(new Date().toISOString().split('T')[0]);
   };
 
+  const handleScanBill = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Camera permission is required to scan bills.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      base64: true,
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      try {
+        setIsSubmitting(true);
+        const response = await aiService.scanBill(result.assets[0].base64);
+        
+        if (response.data.type === 'maintenance') {
+           setDeviceName(response.data.data.deviceName || '');
+           setTaskDescription(response.data.data.taskDescription || '');
+        } else {
+           Alert.alert('AI Notice', 'This bill appears to be for Inventory, but we filled what we could.');
+           setDeviceName(response.data.data.itemName || '');
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to scan bill. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
   if (loading && !refreshing) return <Loading />;
 
   return (
@@ -185,13 +231,21 @@ export default function MaintenanceScreen() {
 
       {/* Add Task Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.black }]}>Schedule Maintenance</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.neutral[500]} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity onPress={handleScanBill} style={styles.scanButton}>
+                  <Ionicons name="camera-outline" size={24} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Ionicons name="close" size={24} color={colors.neutral[500]} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.formContent}>
@@ -235,12 +289,15 @@ export default function MaintenanceScreen() {
               />
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Complete Task Modal */}
       <Modal visible={completeModalVisible} animationType="fade" transparent>
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
           <View style={[styles.modalContent, { backgroundColor: colors.surface, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.black }]}>Complete Task</Text>
@@ -271,7 +328,7 @@ export default function MaintenanceScreen() {
               />
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -321,6 +378,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: spacing.xl,
+    paddingBottom: spacing.xl + 40,
     maxHeight: '90%',
   },
   modalHeader: {
@@ -371,5 +429,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4FACFE',
     fontFamily: typography.fontFamily.bold,
+  },
+  scanButton: {
+    marginRight: spacing.md,
+    padding: spacing.xs,
+    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+    borderRadius: 8,
   },
 });

@@ -6,6 +6,8 @@ const taskSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'completed'], default: 'pending' },
   priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
   deadline: { type: Date },
+  reminderTime: { type: Date },
+  remindUntilCompleted: { type: Boolean, default: false },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   householdId: { type: mongoose.Schema.Types.ObjectId, ref: 'Household', required: true, index: true }
 }, { timestamps: true });

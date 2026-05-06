@@ -1,14 +1,16 @@
 import { Tabs, router, Stack } from 'expo-router';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Loading } from '../components/ui/Loading';
 import { Ionicons } from '@expo/vector-icons';
-import { View } from 'react-native';
+import { View, DeviceEventEmitter } from 'react-native';
 
 function RootContent() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { colors, isDark } = useTheme();
+
+  const [tabBarVisible, setTabBarVisible] = useState(true);
 
   useEffect(() => {
     if (!isLoading) {
@@ -17,6 +19,15 @@ function RootContent() {
       }
     }
   }, [isLoading, isAuthenticated]);
+
+  useEffect(() => {
+    const hideSub = DeviceEventEmitter.addListener('hideTabBar', () => setTabBarVisible(false));
+    const showSub = DeviceEventEmitter.addListener('showTabBar', () => setTabBarVisible(true));
+    return () => {
+      hideSub.remove();
+      showSub.remove();
+    };
+  }, []);
 
   if (isLoading) {
     return <Loading message="Starting Smart Home..." overlay />;
@@ -40,6 +51,7 @@ function RootContent() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.neutral[400],
           tabBarStyle: {
+            display: tabBarVisible ? 'flex' : 'none',
             backgroundColor: colors.surface,
             borderTopColor: colors.neutral[100],
             height: 70,

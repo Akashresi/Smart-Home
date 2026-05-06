@@ -8,10 +8,14 @@ import {
   RefreshControl,
   Alert,
   Modal,
-  ScrollView
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  DeviceEventEmitter
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +48,9 @@ export default function TasksScreen() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDesc, setTaskDesc] = useState('');
   const [taskPriority, setTaskPriority] = useState('medium');
+  const [reminderTime, setReminderTime] = useState<Date | null>(null);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time' | 'datetime' | null>(null);
+  const [remindUntilCompleted, setRemindUntilCompleted] = useState(false);
 
   // Cleaning Form State
   const [cleaningType, setCleaningType] = useState('');
@@ -86,11 +93,15 @@ export default function TasksScreen() {
       await taskService.createTask({
         title: taskTitle,
         description: taskDesc,
-        priority: taskPriority
+        priority: taskPriority,
+        reminderTime: reminderTime ? reminderTime.toISOString() : undefined,
+        remindUntilCompleted
       });
       setTaskModalVisible(false);
       setTaskTitle('');
       setTaskDesc('');
+      setReminderTime(null);
+      setRemindUntilCompleted(false);
       fetchData();
     } catch (err) {
       Alert.alert('Error', 'Failed to create task');
@@ -123,6 +134,15 @@ export default function TasksScreen() {
   }, []);
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    if (taskModalVisible || cleaningModalVisible || actionSheetVisible) {
+      DeviceEventEmitter.emit('hideTabBar');
+    } else {
+      DeviceEventEmitter.emit('showTabBar');
+    }
+    return () => { DeviceEventEmitter.emit('showTabBar'); };
+  }, [taskModalVisible, cleaningModalVisible, actionSheetVisible]);
 
   const delTask = async (id: string, kind: string) => {
     try {
@@ -242,7 +262,10 @@ export default function TasksScreen() {
 
       {/* General Task Modal */}
       <Modal visible={taskModalVisible} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.black }]}>New General Task</Text>
@@ -276,15 +299,85 @@ export default function TasksScreen() {
                 ))}
               </View>
 
-              <Button title="Create Task" onPress={handleAddTask} loading={isSubmitting} />
+              <View style={styles.reminderContainer}>
+                <Text style={styles.label}>Set Reminder (Date & Time)</Text>
+                
+                <TouchableOpacity 
+                  style={styles.timeSelectBtn}
+                  onPress={() => setPickerMode(Platform.OS === 'ios' ? 'datetime' : 'date')}
+                >
+                  <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                  <Text style={[styles.timeSelectText, !reminderTime && { color: colors.neutral[400] }]}>
+                    {reminderTime 
+                      ? reminderTime.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                      : 'Select Date & Time'}
+                  </Text>
+                  {reminderTime && (
+                    <TouchableOpacity onPress={() => setReminderTime(null)} style={{ marginLeft: 'auto' }}>
+                      <Ionicons name="close-circle" size={20} color={colors.neutral[400]} />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+
+                {pickerMode && (
+                  <DateTimePicker
+                    value={reminderTime || new Date()}
+                    mode={pickerMode as any}
+                    display="default"
+                    onValueChange={(event: any, selectedDate?: Date) => {
+                      // Note: onValueChange might not have the event argument in all environments,
+                      // but typically it passes (event, date) or just (date).
+                      const d = (selectedDate instanceof Date) ? selectedDate : (event instanceof Date ? event : (selectedDate || new Date()));
+                      
+                      if (Platform.OS === 'ios') {
+                        setReminderTime(d);
+                      } else {
+                        if (pickerMode === 'date') {
+                          const newD = new Date(d);
+                          if (reminderTime) {
+                            newD.setHours(reminderTime.getHours(), reminderTime.getMinutes());
+                          }
+                          setReminderTime(newD);
+                          setPickerMode('time');
+                        } else {
+                          const newD = new Date(reminderTime || new Date());
+                          newD.setHours(d.getHours(), d.getMinutes());
+                          setReminderTime(newD);
+                          setPickerMode(null);
+                        }
+                      }
+                    }}
+                    onDismiss={() => setPickerMode(null)}
+                  />
+                )}
+
+                {reminderTime && (
+                  <TouchableOpacity 
+                    style={styles.repeatToggle}
+                    onPress={() => setRemindUntilCompleted(!remindUntilCompleted)}
+                  >
+                    <Ionicons 
+                      name={remindUntilCompleted ? "checkmark-circle" : "ellipse-outline"} 
+                      size={24} 
+                      color={remindUntilCompleted ? colors.primary : colors.neutral[400]} 
+                    />
+                    <Text style={[styles.repeatText, remindUntilCompleted && { color: colors.primary }]}>Remind repeatedly until completed</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Button title="Create Task" onPress={handleAddTask} loading={isSubmitting} style={styles.submitButton} />
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Cleaning Task Modal */}
       <Modal visible={cleaningModalVisible} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.black }]}>New Cleaning Task</Text>
@@ -306,7 +399,7 @@ export default function TasksScreen() {
               <Button title="Schedule Cleaning" onPress={handleAddCleaning} loading={isSubmitting} />
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -356,6 +449,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: spacing.xl,
+    paddingBottom: spacing.xl + 40,
     maxHeight: '90%',
   },
   modalHeader: {
@@ -441,5 +535,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4FACFE',
     fontFamily: typography.fontFamily.medium,
+  },
+  reminderContainer: {
+    marginBottom: spacing.xl,
+  },
+  timeSelectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    padding: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  timeSelectText: {
+    fontSize: 16,
+    marginLeft: spacing.sm,
+    fontFamily: typography.fontFamily.medium,
+  },
+  repeatToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  repeatText: {
+    fontSize: 14,
+    marginLeft: spacing.xs,
+    fontFamily: typography.fontFamily.medium,
+    color: '#666',
+  },
+  submitButton: {
+    marginTop: spacing.md,
   },
 });

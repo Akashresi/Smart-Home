@@ -29,3 +29,33 @@ def get_recommendations(data: DeviceData):
     if not data.room_occupancy and sum(data.usage_history) > 10:
         return {"suggestion": "Turn off devices in empty rooms to save energy.", "predictedSavings": 15.5}
     return {"suggestion": "Energy consumption is optimal.", "predictedSavings": 0.0}
+
+class BillData(BaseModel):
+    image: str
+
+@router.post("/scan-bill")
+def scan_bill(data: BillData):
+    import random
+    # Simulate an AI OCR and classification task.
+    # In a real environment, we'd pass data.image (base64) to Google Cloud Vision or a Gemini model.
+    # We will randomly assign it to Inventory or Maintenance to simulate classification.
+    type_guess = "maintenance" if random.choice([True, False]) else "inventory"
+    
+    if type_guess == "maintenance":
+        return {
+            "type": "maintenance",
+            "data": {
+                "deviceName": "HVAC Filter",
+                "taskDescription": "Quarterly HVAC filter replacement and inspection",
+                "cost": 85.00
+            }
+        }
+    else:
+        return {
+            "type": "inventory",
+            "data": {
+                "itemName": "Bulk Paper Towels",
+                "quantity": 12,
+                "cost": 24.99
+            }
+        }

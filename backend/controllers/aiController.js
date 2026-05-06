@@ -41,4 +41,23 @@ const getDeviceRecommendations = async (req, res) => {
   }
 };
 
-module.exports = { getSuggestions, getDeviceRecommendations };
+const scanBill = async (req, res) => {
+  try {
+    const { image } = req.body;
+    const aiResponse = await axios.post(
+      `${config.aiService.url}/api/v1/scan-bill`,
+      { image },
+      {
+        headers: {
+          'Authorization': `Bearer ${config.aiService.apiKey}`
+        }
+      }
+    );
+    res.json(aiResponse.data);
+  } catch (error) {
+    console.error('AI Service Error:', error.message);
+    res.status(500).json({ message: 'Failed to scan bill' });
+  }
+};
+
+module.exports = { getSuggestions, getDeviceRecommendations, scanBill };
