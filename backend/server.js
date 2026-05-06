@@ -64,6 +64,7 @@ app.use('/api/alerts', require('./routes/alertRoutes'));
 app.use('/api/household', require('./routes/householdRoutes'));
 
 app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/insights', require('./routes/insightRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {

@@ -11,7 +11,9 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import maintenanceService from '../services/maintenanceService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -23,6 +25,7 @@ import { typography } from '../theme/typography';
 
 export default function MaintenanceScreen() {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,7 +40,14 @@ export default function MaintenanceScreen() {
   const [cost, setCost] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const maintenanceSuggestions = ['AC Filter', 'Water Purifier', 'Smoke Alarm', 'Pest Control', 'Deep Clean'];
+
   const fetchData = async () => {
+    if (!user?.householdId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const response = await maintenanceService.getMaintenanceTasks();
       setTasks(response.data);
@@ -160,10 +170,17 @@ export default function MaintenanceScreen() {
       />
 
       <TouchableOpacity 
-        style={[styles.fab, { backgroundColor: colors.primary }]}
+        activeOpacity={0.8}
+        style={styles.fabContainer}
         onPress={() => setModalVisible(true)}
       >
-        <Ionicons name="add" size={30} color={colors.white} />
+        <LinearGradient 
+          colors={['#4FACFE', '#00F2FE']} 
+          style={styles.fab}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        >
+          <Ionicons name="add" size={32} color={colors.white} />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Add Task Modal */}
@@ -178,6 +195,16 @@ export default function MaintenanceScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.formContent}>
+              <View style={styles.chipScrollContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                  {maintenanceSuggestions.map(s => (
+                    <TouchableOpacity key={s} style={styles.chip} onPress={() => setDeviceName(s)}>
+                      <Text style={styles.chipText}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
               <Input
                 label="Device/Area Name"
                 placeholder="e.g. AC Filter, Water Purifier"
@@ -268,20 +295,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.medium,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
-    bottom: spacing['2xl'],
+    bottom: 100,
     right: spacing.xl,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    elevation: 8,
+    shadowColor: '#4FACFE',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+  },
+  fab: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
   modalContainer: {
     flex: 1,
@@ -321,5 +350,26 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.md,
+  },
+  chipScrollContainer: {
+    marginBottom: spacing.md,
+  },
+  chipScroll: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 172, 254, 0.2)',
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#4FACFE',
+    fontFamily: typography.fontFamily.bold,
   },
 });

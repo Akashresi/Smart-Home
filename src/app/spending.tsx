@@ -47,6 +47,11 @@ export default function SpendingScreen() {
   }, [selectedCategory]);
 
   const fetchExpenses = async () => {
+    if (!user?.householdId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       setLoading(true);
       const filters = selectedCategory ? { category: selectedCategory } : {};

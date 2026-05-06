@@ -51,11 +51,11 @@ export default function HomeScreen() {
 
     try {
       const [tRes, iRes, eRes, aRes, mRes] = await Promise.all([
-        taskService.getTasks(), 
-        inventoryService.getInventory(), 
-        expenseService.getExpenses(), 
-        alertService.getAlerts(), 
-        maintenanceService.getMaintenanceTasks()
+        taskService.getTasks().catch(e => { console.warn('Tasks 403'); return { data: [] }; }), 
+        inventoryService.getInventory().catch(e => { console.warn('Inventory 403'); return { data: [] }; }), 
+        expenseService.getExpenses().catch(e => { console.warn('Expenses 403'); return { data: { monthlyTotal: 0 } }; }), 
+        alertService.getAlerts().catch(e => { console.warn('Alerts 403'); return { data: [] }; }), 
+        maintenanceService.getMaintenanceTasks().catch(e => { console.warn('Maintenance 403'); return { data: [] }; })
       ]);
 
       setStats({
@@ -110,6 +110,10 @@ export default function HomeScreen() {
         <View>
           <Text style={[styles.greeting, { color: colors.neutral[500] }]}>Welcome back,</Text>
           <Text style={[styles.userName, { color: colors.black }]}>{user?.name || 'Homeowner'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginRight: 6 }} />
+            <Text style={{ fontSize: 12, color: colors.neutral[500], fontFamily: typography.fontFamily.medium }}>System Armed & Secure</Text>
+          </View>
         </View>
         <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.surface }]}>
           <Ionicons name="person-outline" size={24} color={colors.primary} />
@@ -187,37 +191,25 @@ export default function HomeScreen() {
       <Text style={[styles.sectionTitle, { color: colors.black }]}>Quick Actions</Text>
       <View style={styles.quickActions}>
         {[
-          { label: 'Add Task', icon: 'add-circle', color: colors.primary },
-          { label: 'Inventory', icon: 'barcode', color: colors.success },
-          { label: 'Settings', icon: 'settings', color: colors.neutral[600] }
+          { label: 'Insights', icon: 'bar-chart-outline', color: '#8b5cf6', route: '/insights' },
+          { label: 'Spending', icon: 'wallet-outline', color: colors.warning, route: '/spending' },
+          { label: 'Alerts', icon: 'notifications-outline', color: colors.error, route: '/alerts' }
         ].map((action, i) => (
-          <TouchableOpacity key={i} style={[styles.actionBtn, { backgroundColor: colors.surface }]}>
+          <TouchableOpacity 
+            key={i} 
+            activeOpacity={0.7}
+            style={[styles.actionBtn, { backgroundColor: colors.surface }]}
+            onPress={() => action.route ? router.push(action.route as any) : null}
+          >
             <View style={[styles.actionIconWrapper, { backgroundColor: action.color + '15' }]}>
-              <Ionicons name={action.icon as any} size={24} color={action.color} />
+              <Ionicons name={action.icon as any} size={28} color={action.color} />
             </View>
-            <Text style={[styles.actionLabel, { color: colors.neutral[700] }]}>{action.label}</Text>
+            <Text style={[styles.actionLabel, { color: colors.neutral[800] }]}>{action.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.black, marginTop: spacing.lg }]}>Home Maintenance</Text>
-      <TouchableOpacity 
-        style={styles.maintenanceRow} 
-        onPress={() => router.push('/maintenance')}
-      >
-        <Card style={[styles.maintenanceCard, { backgroundColor: colors.surface }]} variant="elevated">
-          <View style={[styles.mIconWrapper, { backgroundColor: colors.info + '10' }]}>
-            <Ionicons name="construct" size={24} color={colors.info} />
-          </View>
-          <View style={styles.mInfo}>
-            <Text style={[styles.mTitle, { color: colors.black }]}>Maintenance Tasks</Text>
-            <Text style={[styles.mStatus, { color: colors.neutral[500] }]}>
-              {stats.maintenance > 0 ? `${stats.maintenance} tasks require attention` : 'Systems running normally'}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.neutral[300]} />
-        </Card>
-      </TouchableOpacity>
+
 
       <View style={{ height: 120 }} />
     </ScrollView>
@@ -335,19 +327,19 @@ const styles = StyleSheet.create({
   actionBtn: {
     flex: 1,
     padding: spacing.md,
-    borderRadius: 20,
+    borderRadius: 24,
     alignItems: 'center',
-    gap: 8,
-    elevation: 2,
+    gap: 12,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   actionIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },

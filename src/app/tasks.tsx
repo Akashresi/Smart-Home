@@ -11,6 +11,7 @@ import {
   ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +34,11 @@ export default function TasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [taskModalVisible, setTaskModalVisible] = useState(false);
   const [cleaningModalVisible, setCleaningModalVisible] = useState(false);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const taskSuggestions = ['Fix leak', 'Change bulb', 'Grocery shop', 'Pay bills'];
+  const cleaningSuggestions = ['Living Room', 'Kitchen', 'Bathroom', 'Bedroom'];
 
   // Task Form State
   const [taskTitle, setTaskTitle] = useState('');
@@ -53,8 +58,8 @@ export default function TasksScreen() {
 
     try {
       const [tRes, cRes] = await Promise.all([
-        taskService.getTasks(), 
-        cleaningService.getCleanings()
+        taskService.getTasks().catch(e => ({ data: [] })), 
+        cleaningService.getCleanings().catch(e => ({ data: [] }))
       ]);
       
       const tasks = tRes.data.map((t: any) => ({ ...t, kind: 'task' }));
@@ -183,25 +188,57 @@ export default function TasksScreen() {
       />
       
       <TouchableOpacity 
+        activeOpacity={0.8}
         style={[
-          styles.fab, 
-          { backgroundColor: colors.primary },
-          !user?.householdId && { backgroundColor: colors.neutral[300], opacity: 0.5 }
+          styles.fabContainer, 
+          !user?.householdId && { opacity: 0.5 }
         ]}
         onPress={() => {
           if (!user?.householdId) {
             Alert.alert('Household Required', 'Please join or create a household in Settings first.');
           } else {
-            Alert.alert('Add New', 'What would you like to add?', [
-                { text: 'General Task', onPress: () => setTaskModalVisible(true) },
-                { text: 'Cleaning Task', onPress: () => setCleaningModalVisible(true) },
-                { text: 'Cancel', style: 'cancel' }
-            ]);
+            setActionSheetVisible(true);
           }
         }}
       >
-        <Ionicons name="add" size={30} color={colors.white} />
+        <LinearGradient 
+          colors={['#4FACFE', '#00F2FE']} 
+          style={styles.fab}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        >
+          <Ionicons name="add" size={32} color={colors.white} />
+        </LinearGradient>
       </TouchableOpacity>
+
+      {/* Action Sheet Modal */}
+      <Modal visible={actionSheetVisible} animationType="slide" transparent>
+        <TouchableOpacity style={styles.modalContainer} activeOpacity={1} onPress={() => setActionSheetVisible(false)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.handleBar} />
+            <Text style={[styles.modalTitle, { color: colors.black, marginBottom: spacing.xl, textAlign: 'center' }]}>What would you like to add?</Text>
+            
+            <TouchableOpacity 
+              style={[styles.actionSheetBtn, { backgroundColor: colors.primary + '15' }]} 
+              onPress={() => { setActionSheetVisible(false); setTimeout(() => setTaskModalVisible(true), 300); }}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+                <Ionicons name="checkbox-outline" size={24} color="white" />
+              </View>
+              <Text style={[styles.actionText, { color: colors.primary }]}>General Task</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.actionSheetBtn, { backgroundColor: colors.info + '15' }]} 
+              onPress={() => { setActionSheetVisible(false); setTimeout(() => setCleaningModalVisible(true), 300); }}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.info }]}>
+                <Ionicons name="sparkles-outline" size={24} color="white" />
+              </View>
+              <Text style={[styles.actionText, { color: colors.info }]}>Cleaning Task</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* General Task Modal */}
       <Modal visible={taskModalVisible} animationType="slide" transparent>
@@ -214,6 +251,15 @@ export default function TasksScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.formContent}>
+              <View style={styles.chipScrollContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                  {taskSuggestions.map(s => (
+                    <TouchableOpacity key={s} style={styles.chip} onPress={() => setTaskTitle(s)}>
+                      <Text style={styles.chipText}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
               <Input label="Task Title" value={taskTitle} onChangeText={setTaskTitle} placeholder="e.g. Fix leaky faucet" />
               <Input label="Description" value={taskDesc} onChangeText={setTaskDesc} placeholder="Optional details..." multiline />
               
@@ -247,6 +293,15 @@ export default function TasksScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.formContent}>
+              <View style={styles.chipScrollContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                  {cleaningSuggestions.map(s => (
+                    <TouchableOpacity key={s} style={styles.chip} onPress={() => setCleaningType(s)}>
+                      <Text style={styles.chipText}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
               <Input label="Cleaning Type" value={cleaningType} onChangeText={setCleaningType} placeholder="e.g. Living Room, Bathroom" />
               <Button title="Schedule Cleaning" onPress={handleAddCleaning} loading={isSubmitting} />
             </ScrollView>
@@ -275,20 +330,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.medium,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
-    bottom: spacing['2xl'],
+    bottom: 100,
     right: spacing.xl,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    elevation: 8,
+    shadowColor: '#4FACFE',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+  },
+  fab: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
   modalContainer: {
     flex: 1,
@@ -336,5 +393,53 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 12,
     fontFamily: typography.fontFamily.bold,
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#ccc',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  actionSheetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderRadius: 16,
+    marginBottom: spacing.md,
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  actionText: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.bold,
+  },
+  chipScrollContainer: {
+    marginBottom: spacing.md,
+  },
+  chipScroll: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 172, 254, 0.2)',
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#4FACFE',
+    fontFamily: typography.fontFamily.medium,
   },
 });

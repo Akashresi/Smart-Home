@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -40,7 +41,14 @@ export default function InventoryScreen() {
   const [cost, setCost] = useState(''); // Cost for auto-sync with spending
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const inventorySuggestions = ['Milk', 'Eggs', 'Bread', 'Detergent', 'Coffee'];
+
   const fetchData = async () => {
+    if (!user?.householdId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const response = await inventoryService.getInventory();
       setInventory(response.data);
@@ -149,10 +157,10 @@ export default function InventoryScreen() {
       />
 
       <TouchableOpacity 
+        activeOpacity={0.8}
         style={[
-          styles.fab, 
-          { backgroundColor: colors.primary },
-          !user?.householdId && { backgroundColor: colors.neutral[300], opacity: 0.5 }
+          styles.fabContainer, 
+          !user?.householdId && { opacity: 0.5 }
         ]}
         onPress={() => {
           if (!user?.householdId) {
@@ -162,7 +170,13 @@ export default function InventoryScreen() {
           }
         }}
       >
-        <Ionicons name="add" size={30} color={colors.white} />
+        <LinearGradient 
+          colors={['#4FACFE', '#00F2FE']} 
+          style={styles.fab}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        >
+          <Ionicons name="add" size={32} color={colors.white} />
+        </LinearGradient>
       </TouchableOpacity>
 
       <Modal visible={modalVisible} animationType="slide" transparent>
@@ -176,6 +190,16 @@ export default function InventoryScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.formContent}>
+              <View style={styles.chipScrollContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                  {inventorySuggestions.map(s => (
+                    <TouchableOpacity key={s} style={styles.chip} onPress={() => setItemName(s)}>
+                      <Text style={styles.chipText}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
               <Input
                 label="Item Name"
                 placeholder="e.g. Rice, Detergent, Milk"
@@ -245,20 +269,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.medium,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
-    bottom: spacing['2xl'],
+    bottom: 100,
     right: spacing.xl,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    elevation: 8,
+    shadowColor: '#4FACFE',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+  },
+  fab: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
   modalContainer: {
     flex: 1,
@@ -296,5 +322,26 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.md,
+  },
+  chipScrollContainer: {
+    marginBottom: spacing.md,
+  },
+  chipScroll: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 172, 254, 0.2)',
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#4FACFE',
+    fontFamily: typography.fontFamily.bold,
   },
 });

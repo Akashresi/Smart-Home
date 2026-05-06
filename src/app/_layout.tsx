@@ -86,23 +86,29 @@ function RootContent() {
         <Tabs.Screen 
           name="maintenance" 
           options={{ 
-            title: 'Fix',
+            title: 'Maintenance',
             tabBarIcon: ({ color, size }) => <Ionicons name="construct-outline" size={size} color={color} />,
           }} 
         />
         <Tabs.Screen 
           name="spending" 
           options={{ 
+            href: null,
             title: 'Spending',
-            tabBarLabel: 'Spending',
-            tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
           }} 
         />
         <Tabs.Screen 
           name="alerts" 
           options={{ 
+            href: null,
             title: 'Alerts',
-            tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} />,
+          }} 
+        />
+        <Tabs.Screen 
+          name="insights" 
+          options={{ 
+            href: null,
+            title: 'Insights',
           }} 
         />
         <Tabs.Screen 
